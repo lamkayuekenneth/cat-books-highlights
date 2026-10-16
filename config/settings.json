@@ -1,4 +1,4 @@
 {
-  "model": "google/gemini-2.5-flash",
+  "model": "qwen/qwen3-vl-30b-a3b-instruct",
   "base_url": "https://openrouter.ai/api/v1"
 }
