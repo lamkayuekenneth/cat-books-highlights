@@ -46,18 +46,19 @@
       <h2 class="section-title">🤖 AI 模型設定</h2>
       <div class="field">
         <label class="field-label" for="model">Model（OpenRouter model ID）</label>
-        <input id="model" type="text" list="model-list" placeholder="qwen/qwen3-vl-30b-a3b-instruct" autocomplete="off">
+        <input id="model" type="text" list="model-list" placeholder="qwen/qwen3-vl-8b-instruct" autocomplete="off">
         <datalist id="model-list">
+          <option value="qwen/qwen3-vl-8b-instruct">
+          <option value="qwen/qwen3.8-flash">
+          <option value="qwen/qwen3.6-flash">
           <option value="qwen/qwen3-vl-30b-a3b-instruct">
           <option value="qwen/qwen2.5-vl-72b-instruct">
-          <option value="openai/gpt-4o-mini">
-          <option value="google/gemini-2.5-flash">
-          <option value="moondream/moondream3.1-9b-a2b">
         </datalist>
         <p class="hint">
-          ⚠️ 建議用 <strong>qwen/qwen3-vl-30b-a3b-instruct</strong>（預設）：OCR 準、平、對書頁冇限制。<br>
-          ❌ <code>moondream*</code> 太弱，讀唔到書頁細字。<br>
-          ❌ <code>openai/gpt-4o-mini</code> 同 <code>google/gemini-*</code> 對「書頁文字」有 ToS 審查（會回 403），唔啱呢個用途。
+          🚀 直連模式（幾秒出結果）同 Actions 後備模式都用呢個 model。<br>
+          ⚡ 最快：<code>qwen/qwen3-vl-8b-instruct</code>（預設）或 <code>qwen/qwen3.8-flash</code>（更快，可試）。<br>
+          🎯 最準：<code>qwen/qwen3-vl-30b-a3b-instruct</code>（準但慢少少）。<br>
+          ❌ <code>moondream*</code> 太弱讀唔到細字；❌ <code>openai/gpt-4o-mini</code>、<code>google/gemini-*</code> 對「書頁文字」有 ToS 審查（403）。
         </p>
       </div>
       <div class="field">
@@ -65,7 +66,7 @@
         <input id="base-url" type="text" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
         <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。</p>
       </div>
-      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>（需要 GitHub Token 有 Contents 權限）。</p>
+      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>，同時記低喺你瀏覽器（直連模式用）。</p>
       <div class="card-actions">
         <button class="btn btn-primary" id="save-ai" type="button">儲存 AI 設定</button>
       </div>
@@ -73,21 +74,39 @@
     </section>
 
     <section class="card">
-      <h2 class="section-title">🔑 OpenRouter API Key</h2>
+      <h2 class="section-title">🚀 瀏覽器直連（最快：幾秒出結果）</h2>
+      <div class="field">
+        <label class="field-label" for="orkey">OpenRouter API Key（直連用）</label>
+        <input id="orkey" type="password" placeholder="sk-or-…" autocomplete="off">
+        <p class="hint">
+          <strong>啟用之後</strong>：相片上傳後會由你嘅瀏覽器<b>直接 call OpenRouter</b>，
+          唔經 GitHub Actions，<b>幾秒</b>就出到 AI 結果；相片完全唔會離開你部機。<br>
+          Key 只會儲存喺<b>你瀏覽器嘅 localStorage</b>（同你個 GitHub Token 一樣），
+          唔會入 repository。<br>
+          如果冇填呢個 Key（或直連失敗），會自動用返 GitHub Actions 後備模式（約 1–2 分鐘）。
+        </p>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="enable-orkey" type="button">啟用直連</button>
+      </div>
+      <p class="status" id="orkey-status"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">🔑 OpenRouter API Key（GitHub Actions 後備用）</h2>
       <div class="field">
         <label class="field-label" for="api-key">API Key</label>
         <input id="api-key" type="password" placeholder="sk-or-…" autocomplete="off">
         <p class="hint">
-          建議做法：API Key <strong>唔好放入 repository</strong>。按「儲存 API Key」會用
-          GitHub Secrets API 加密寫入 <code>OPENROUTER_API_KEY</code> Actions secret，
-          只有 GitHub Actions 分析時先用嚟 call OpenRouter。<br>
+          呢個係<b>後備模式</b>用：如果冇啟用瀏覽器直連，就會用 GitHub Actions 分析，呢個 Key 會用
+          GitHub Secrets API 加密寫入 <code>OPENROUTER_API_KEY</code> Actions secret（唔會入 repository）。<br>
           如果 Token 冇 Secrets 權限，可直接去
           <code>GitHub → Settings → Secrets and variables → Actions</code> 新增
           <code>OPENROUTER_API_KEY</code>。
         </p>
       </div>
       <div class="card-actions">
-        <button class="btn btn-primary" id="save-key" type="button">儲存 API Key</button>
+        <button class="btn btn-primary" id="save-key" type="button">儲存 API Key（後備）</button>
         <button class="btn btn-ghost" id="verify-key" type="button">驗證 Key</button>
       </div>
       <p class="status" id="key-status"></p>

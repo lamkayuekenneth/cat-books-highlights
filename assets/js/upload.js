@@ -15,6 +15,20 @@
   var POLL_INTERVAL = 5000;  /* ms */
   var POLL_MAX = 72;         /* 約 6 分鐘 */
 
+  /* ---------- 直連 OpenRouter 用嘅 prompt（同 analyze.py 一致） ---------- */
+  var SYSTEM_PROMPT =
+    '你係一個協助整理閱讀筆記嘅助手。用戶影咗一本書其中一頁嘅相片，' +
+    '頁面有書名同螢光筆標記。\n' +
+    '請完成兩件事：\n' +
+    '1. 如果頁面頁眉或頁腳印有書名，寫出書名；如果嗰行明顯係章節名或內文，就寫空字串。\n' +
+    '2. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅詞彙或短語；' +
+    '有就逐個列出，保留原文語言（中英夾雜就照寫），每個獨立一項，唔好加 # 符號，' +
+    '唔好自行擴寫或翻譯。\n' +
+    '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
+    '{"book_title": "書名", "tags": ["關鍵字1", "關鍵字2"]}\n' +
+    '唔好輸出任何其他文字、解釋、或者 markdown 標記。';
+  var USER_PROMPT = '請睇吓呢張書頁相片，寫出書名同螢光筆標記嘅重點詞彙。';
+
   var dz = document.getElementById('dropzone');
   var fileInput = document.getElementById('file-input');
   var cameraInput = document.getElementById('camera-input');
@@ -112,7 +126,72 @@
     });
   }
 
-  /* ---------- 輪詢 pending 結果檔 ---------- */
+  /* ---------- 直連 OpenRouter：瀏覽器直接 call，幾秒出結果 ---------- */
+  function parseAiJson(content) {
+    if (!content) return null;
+    content = String(content).trim();
+    var m = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (m) content = m[1].trim();
+    try {
+      var obj = JSON.parse(content);
+      if (obj && typeof obj === 'object') return obj;
+    } catch (e) { /* fall through */ }
+    var start = content.indexOf('{');
+    var end = content.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try {
+        var obj2 = JSON.parse(content.slice(start, end + 1));
+        if (obj2 && typeof obj2 === 'object') return obj2;
+      } catch (e2) { /* ignore */ }
+    }
+    return null;
+  }
+
+  function directAnalyze(dataUrl) {
+    var cfg = CB.getAiCache();
+    var key = CB.getOrKey();
+    return fetch(cfg.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': location.origin + location.pathname,
+        'X-Title': 'CatBookmark'
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: [
+            { type: 'image_url', image_url: { url: dataUrl } },
+            { type: 'text', text: USER_PROMPT }
+          ]}
+        ],
+        temperature: 0.1,
+        max_tokens: 300
+      })
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (j) {
+        if (!res.ok) {
+          var msg = (j && j.error) ? (j.error.message || JSON.stringify(j.error)) : ('HTTP ' + res.status);
+          throw new Error('OpenRouter HTTP ' + res.status + ': ' + msg);
+        }
+        var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        var parsed = parseAiJson(content);
+        if (!parsed) throw new Error('模型回應無法解析');
+        var book_title = String(parsed.book_title || '').trim();
+        var tags = [];
+        var seen = {};
+        (Array.isArray(parsed.tags) ? parsed.tags : []).forEach(function (t) {
+          t = String(t).trim().replace(/^#+/, '').trim();
+          if (t && !seen[t]) { seen[t] = true; tags.push(t); }
+        });
+        return { book_title: book_title, tags: tags };
+      });
+    });
+  }
+
+  /* ---------- 輪詢 pending 結果檔（GitHub Actions 後備模式） ---------- */
   function pollPending(id) {
     var attempts = 0;
     function tick() {
@@ -121,7 +200,7 @@
         return JSON.parse(text);
       }).catch(function () {
         if (attempts >= POLL_MAX) {
-          throw new Error('分析逾時（約 4 分鐘）。請到 GitHub > Actions 睇下 run 狀態。');
+          throw new Error('分析逾時（約 6 分鐘）。請到 GitHub > Actions 睇下 run 狀態，或者考慮喺設定頁啟用「瀏覽器直連」。');
         }
         return sleep(POLL_INTERVAL).then(tick);
       });
@@ -133,6 +212,7 @@
   function Card(file, id) {
     this.id = id;
     this._saved = false;
+    this._direct = false;   /* 直連模式：冇 pending 檔，儲存/捨棄唔使刪檔 */
     this._previewUrl = null;
     var card = this;
 
@@ -274,6 +354,7 @@
     }).then(function (rows) {
       return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n', '新增書目：' + title);
     }).then(function () {
+      if (card._direct) return null; /* 直連模式冇 pending 檔 */
       return CB.deleteFile('data/pending/' + card.id + '.json')
         .catch(function () { return null; });
     }).then(function () {
@@ -295,6 +376,7 @@
 
   Card.prototype.discard = function () {
     var card = this;
+    if (card._direct) { card.remove(); return; }
     CB.deleteFile('data/pending/' + card.id + '.json').catch(function () { return null; }).then(function () {
       card.remove();
     });
@@ -306,6 +388,20 @@
   };
 
   /* ---------- 主流程 ---------- */
+  function runActionsPath(id, card, compressed) {
+    card.status(compressed.shrunk ? 'AI 分析緊…（已自動壓縮）' : 'AI 分析緊…');
+    return CB.dispatchWorkflow('analyze.yml', {
+      image_base64: compressed.base64,
+      image_id: id
+    }).then(function () {
+      card.status('等緊分析結果…');
+      return pollPending(id);
+    }).then(function (result) {
+      if (result && result.error) card.showError(result.error);
+      else card.setResult(result || { book_title: '', tags: [] });
+    });
+  }
+
   function handleFiles(fileList) {
     var files = Array.prototype.filter.call(fileList, function (f) { return f.type.indexOf('image/') === 0; });
     if (!files.length) return toast('請揀相片檔案', 'warn');
@@ -323,17 +419,21 @@
           if (compressed.base64.length > MAX_B64_LEN + 50000) {
             throw new Error('相片太複雜，壓縮後仍然超出限制（請揀較清晰嘅書頁相）');
           }
-          card.status(compressed.shrunk ? 'AI 分析緊…（已自動壓縮）' : 'AI 分析緊…');
-          return CB.dispatchWorkflow('analyze.yml', {
-            image_base64: compressed.base64,
-            image_id: id
-          });
-        }).then(function () {
-          card.status('等緊分析結果…');
-          return pollPending(id);
-        }).then(function (result) {
-          if (result && result.error) card.showError(result.error);
-          else card.setResult(result || { book_title: '', tags: [] });
+          if (CB.getOrKey()) {
+            /* 直連模式：瀏覽器直接 call OpenRouter，幾秒出結果，相片唔會離開部機 */
+            card._direct = true;
+            card.status(compressed.shrunk ? 'AI 分析緊…（直連，幾秒）' : 'AI 分析緊…（直連，幾秒）');
+            return directAnalyze(compressed.dataUrl).then(function (result) {
+              card.setResult(result);
+            }).catch(function (err) {
+              card._direct = false;
+              card.status('直連失敗，自動改用 GitHub Actions…');
+              toast('直連失敗（' + (err.message || err) + '），改用後備模式', 'warn');
+              return runActionsPath(id, card, compressed);
+            });
+          }
+          /* 後備模式：GitHub Actions */
+          return runActionsPath(id, card, compressed);
         }).catch(function (err) {
           card.showError(err.message || '分析失敗');
         });

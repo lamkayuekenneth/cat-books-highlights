@@ -21,6 +21,10 @@
   var keyStatus = document.getElementById('key-status');
   var secretState = document.getElementById('secret-state');
 
+  var orKeyInput = document.getElementById('orkey');
+  var enableOrBtn = document.getElementById('enable-orkey');
+  var orKeyStatus = document.getElementById('orkey-status');
+
   /* ---------- 初始值 ---------- */
   var conn = CB.getOwnerRepo();
   ownerInput.value = conn.owner;
@@ -72,8 +76,9 @@
       JSON.stringify({ model: model, base_url: baseUrl }, null, 2) + '\n',
       '更新 AI 設定（model / base url）')
       .then(function () {
+        CB.setAiCache(model, baseUrl); /* 直連模式用嘅瀏覽器快取 */
         aiStatus.className = 'status ok';
-        aiStatus.textContent = '✓ 已寫入 config/settings.json';
+        aiStatus.textContent = '✓ 已寫入 config/settings.json，同時記低喺瀏覽器（直連用）';
         toast('AI 設定已儲存 ✓', 'ok');
       })
       .catch(function (err) {
@@ -84,7 +89,28 @@
       .then(function () { saveAiBtn.disabled = false; });
   });
 
-  /* ---------- API Key → GitHub Actions secret ---------- */
+  /* ---------- 瀏覽器直連 Key（localStorage） ---------- */
+  function refreshOrKeyState() {
+    var k = CB.getOrKey();
+    if (k) {
+      orKeyStatus.className = 'status ok';
+      orKeyStatus.textContent = '✓ 直連已啟用（Key 尾 4 位：…' + k.slice(-4) + '）。上傳相片會直接 call OpenRouter，幾秒出結果。';
+    } else {
+      orKeyStatus.className = 'status warn';
+      orKeyStatus.textContent = '尚未啟用直連：填入 Key 後按「啟用直連」；否則用 GitHub Actions 後備模式（約 1–2 分鐘）。';
+    }
+  }
+  enableOrBtn.addEventListener('click', function () {
+    var key = orKeyInput.value.trim();
+    if (!key) return toast('請輸入 OpenRouter API Key', 'warn');
+    CB.setOrKey(key);
+    orKeyInput.value = '';
+    refreshOrKeyState();
+    toast('✓ 直連已啟用（幾秒出結果）', 'ok');
+  });
+  refreshOrKeyState();
+
+  /* ---------- API Key → GitHub Actions secret（後備模式） ---------- */
   var sodiumPromise = null;
   function loadScript(src) {
     return new Promise(function (resolve, reject) {

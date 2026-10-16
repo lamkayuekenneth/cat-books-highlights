@@ -7,6 +7,11 @@
   var LS_PAT = 'catbookmark_pat';
   var LS_OWNER = 'catbookmark_owner';
   var LS_REPO = 'catbookmark_repo';
+  var LS_ORK = 'catbookmark_orkey';
+  var LS_MODEL = 'catbookmark_model';
+  var LS_BASE = 'catbookmark_base_url';
+  var DEFAULT_MODEL = 'qwen/qwen3-vl-8b-instruct';
+  var DEFAULT_BASE = 'https://openrouter.ai/api/v1';
 
   function b64ToUtf8(b64) {
     var bin = atob(b64);
@@ -32,6 +37,21 @@
 
     getPat: function () { return localStorage.getItem(LS_PAT) || ''; },
     setPat: function (v) { if (v) localStorage.setItem(LS_PAT, v); else localStorage.removeItem(LS_PAT); },
+
+    /* 瀏覽器直連 OpenRouter 用（最快）；key 只存喺自己瀏覽器 localStorage */
+    getOrKey: function () { return localStorage.getItem(LS_ORK) || ''; },
+    setOrKey: function (v) { if (v) localStorage.setItem(LS_ORK, v); else localStorage.removeItem(LS_ORK); },
+
+    getAiCache: function () {
+      return {
+        model: localStorage.getItem(LS_MODEL) || DEFAULT_MODEL,
+        baseUrl: localStorage.getItem(LS_BASE) || DEFAULT_BASE
+      };
+    },
+    setAiCache: function (model, baseUrl) {
+      if (model) localStorage.setItem(LS_MODEL, model);
+      if (baseUrl) localStorage.setItem(LS_BASE, baseUrl);
+    },
 
     /* 自動偵測 GitHub Pages 網址：https://<owner>.github.io/<repo>/ */
     getOwnerRepo: function () {
