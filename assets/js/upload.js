@@ -5,12 +5,12 @@
 (function () {
   'use strict';
 
-  var MAX_DIM = 1280;        /* 壓縮後最長邊 */
-  var JPEG_QUALITY = 0.78;
-  /* GitHub workflow_dispatch inputs payload 上限係 65,535 字元；
-     圖片 base64 預留緩衝，目標 ≤60,000 字元（連同 image_id 等 JSON 包裝都唔會超） */
-  var MAX_B64_LEN = 60000;
-  var MIN_DIM = 480;         /* 縮細下限，太細就冇辦法讀到書名 */
+  var MAX_DIM = 1600;        /* 壓縮後最長邊 */
+  var JPEG_QUALITY = 0.8;
+  /* repository_dispatch 嘅 client_payload 可載幾 MB（唔似 workflow_dispatch 得 65,535 字元），
+     圖片可以高質素直送；目標 base64 ≤1,200,000 字元（約 900KB JPEG）——書頁細字都讀得清楚 */
+  var MAX_B64_LEN = 1200000;
+  var MIN_DIM = 800;         /* 縮細下限，太細就冇辦法讀到書名 */
   var POLL_INTERVAL = 4000;  /* ms */
   var POLL_MAX = 60;         /* 約 4 分鐘 */
 
@@ -308,8 +308,8 @@
         var card = new Card(file, id);
         queue.insertBefore(card.el, queue.firstChild);
         return compressImage(file).then(function (compressed) {
-          if (compressed.base64.length > 64000) {
-            throw new Error('相片太複雜，壓縮後仍然超出 GitHub 限制（請揀較清晰嘅書頁相）');
+          if (compressed.base64.length > MAX_B64_LEN + 50000) {
+            throw new Error('相片太複雜，壓縮後仍然超出限制（請揀較清晰嘅書頁相）');
           }
           card.status(compressed.shrunk ? 'AI 分析緊…（已自動壓縮）' : 'AI 分析緊…');
           return CB.dispatchWorkflow('analyze.yml', {

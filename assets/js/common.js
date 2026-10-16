@@ -130,12 +130,13 @@
       });
     },
 
-    /* dispatch GitHub Actions workflow（需要 token 有 actions:write） */
+    /* dispatch GitHub Actions workflow（repository_dispatch：client_payload 冇 65,535 字元限制，
+       圖片可以高質素直送；需要 token 有 actions:write） */
     dispatchWorkflow: function (fileName, inputs) {
       var r = this.requireRepo();
-      return this.gh('/repos/' + r.owner + '/' + r.repo + '/actions/workflows/' + fileName + '/dispatches', {
+      return this.gh('/repos/' + r.owner + '/' + r.repo + '/dispatches', {
         method: 'POST',
-        body: JSON.stringify({ ref: 'main', inputs: inputs })
+        body: JSON.stringify({ event_type: 'analyze', client_payload: inputs })
       });
     }
   };
