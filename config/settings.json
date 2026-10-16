@@ -1,4 +1,4 @@
 {
-  "model": "openai/gpt-4o-mini",
+  "model": "moondream/moondream3.1-9b-a2b",
   "base_url": "https://openrouter.ai/api/v1"
 }
