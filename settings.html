@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CatBookmark 貓書籤 — 設定：GitHub 連線、AI 模型、OpenRouter API Key">
+  <title>CatBookmark 貓書籤 · 設定</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="page-settings">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">🐱</span> CatBookmark <span class="brand-sub">貓書籤</span></a>
+      <nav class="nav">
+        <a class="nav-link" href="index.html">📷 上傳</a>
+        <a class="nav-link" href="library.html">📚 書目庫</a>
+        <a class="nav-link active" href="settings.html">⚙️ 設定</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container settings-grid">
+    <section class="card">
+      <h2 class="section-title">🔌 GitHub 連線</h2>
+      <div class="field">
+        <label class="field-label" for="owner">Owner（GitHub 用戶名）</label>
+        <input id="owner" type="text" placeholder="例如 lamkayuekenneth" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field-label" for="repo">Repo</label>
+        <input id="repo" type="text" placeholder="例如 cat-books-highlights" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field-label" for="pat">GitHub Token（PAT）</label>
+        <input id="pat" type="password" placeholder="github_pat_… / ghp_…" autocomplete="off">
+        <p class="hint">Token 只會儲存喺你瀏覽器嘅 <code>localStorage</code>，用嚟 dispatch workflow、讀寫 JSON 同更新 secret。需要權限：<strong>Actions（讀寫）</strong>、<strong>Contents（讀寫）</strong>、<strong>Secrets（讀寫，可選）</strong>、<strong>Metadata（讀）</strong>。</p>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="test-conn" type="button">測試連線</button>
+      </div>
+      <p class="status" id="conn-status"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">🤖 AI 模型設定</h2>
+      <div class="field">
+        <label class="field-label" for="model">Model（OpenRouter model ID）</label>
+        <input id="model" type="text" list="model-list" placeholder="openai/gpt-4o-mini" autocomplete="off">
+        <datalist id="model-list">
+          <option value="openai/gpt-4o-mini">
+          <option value="openai/gpt-4o">
+          <option value="anthropic/claude-3-5-sonnet">
+          <option value="google/gemini-2.0-flash-exp">
+          <option value="qwen/qwen-2.5-vl-72b-instruct">
+        </datalist>
+      </div>
+      <div class="field">
+        <label class="field-label" for="base-url">Base URL</label>
+        <input id="base-url" type="text" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
+        <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。</p>
+      </div>
+      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>（需要 GitHub Token 有 Contents 權限）。</p>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="save-ai" type="button">儲存 AI 設定</button>
+      </div>
+      <p class="status" id="ai-status"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">🔑 OpenRouter API Key</h2>
+      <div class="field">
+        <label class="field-label" for="api-key">API Key</label>
+        <input id="api-key" type="password" placeholder="sk-or-…" autocomplete="off">
+        <p class="hint">
+          建議做法：API Key <strong>唔好放入 repository</strong>。按「儲存 API Key」會用
+          GitHub Secrets API 加密寫入 <code>OPENROUTER_API_KEY</code> Actions secret，
+          只有 GitHub Actions 分析時先用嚟 call OpenRouter。<br>
+          如果 Token 冇 Secrets 權限，可直接去
+          <code>GitHub → Settings → Secrets and variables → Actions</code> 新增
+          <code>OPENROUTER_API_KEY</code>。
+        </p>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="save-key" type="button">儲存 API Key</button>
+      </div>
+      <p class="status" id="key-status"></p>
+      <p class="status" id="secret-state"></p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/settings.js"></script>
+</body>
+</html>

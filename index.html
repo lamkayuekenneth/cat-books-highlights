@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CatBookmark 貓書籤 — 影低書頁，自動抽出書名同螢光筆關鍵字">
+  <title>CatBookmark 貓書籤 · 上傳</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="page-upload">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">🐱</span> CatBookmark <span class="brand-sub">貓書籤</span></a>
+      <nav class="nav">
+        <a class="nav-link active" href="index.html">📷 上傳</a>
+        <a class="nav-link" href="library.html">📚 書目庫</a>
+        <a class="nav-link" href="settings.html">⚙️ 設定</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="dropzone" id="dropzone">
+      <div class="dz-icon">📸</div>
+      <h2 class="dz-title">影低書頁，自動抽出書名同螢光筆關鍵字</h2>
+      <p class="dz-hint">相片只會喺分析期間短暫處理，<strong>唔會存入 repository</strong>；分析完之後你仲可以編輯／刪除／新增標籤先至儲存</p>
+      <div class="dz-actions">
+        <label class="btn btn-primary" for="file-input">
+          從相簿揀相片
+          <input type="file" id="file-input" accept="image/*" multiple hidden>
+        </label>
+        <label class="btn btn-ghost" for="camera-input">
+          📷 影相
+          <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+        </label>
+      </div>
+    </section>
+
+    <section class="queue" id="queue"></section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/upload.js"></script>
+</body>
+</html>

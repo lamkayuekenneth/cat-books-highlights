@@ -1,0 +1,15 @@
+# macOS / Windows
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs / misc
+*.log
+node_modules/
+
+# 唔好 commit 本地暫存 token
+*.token
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CatBookmark 貓書籤 — 書目庫：檢視／編輯已儲存嘅書名同標籤">
+  <title>CatBookmark 貓書籤 · 書目庫</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="page-library">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">🐱</span> CatBookmark <span class="brand-sub">貓書籤</span></a>
+      <nav class="nav">
+        <a class="nav-link" href="index.html">📷 上傳</a>
+        <a class="nav-link active" href="library.html">📚 書目庫</a>
+        <a class="nav-link" href="settings.html">⚙️ 設定</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="section-head">
+        <h2 class="section-title">📚 書目庫</h2>
+        <button class="btn btn-ghost" id="reload" type="button">重新載入</button>
+      </div>
+
+      <div class="filter-row">
+        <div class="field">
+          <label class="field-label" for="filter-title">書名（揀或手動輸入）</label>
+          <input id="filter-title" type="text" list="title-list" placeholder="揀或輸入書名…" autocomplete="off">
+          <datalist id="title-list"></datalist>
+        </div>
+        <div class="field">
+          <label class="field-label" for="filter-tag">標籤（揀或手動輸入）</label>
+          <input id="filter-tag" type="text" list="tag-list" placeholder="揀或輸入標籤…" autocomplete="off">
+          <datalist id="tag-list"></datalist>
+        </div>
+        <button class="btn btn-ghost" id="filter-clear" type="button">清除篩選</button>
+      </div>
+
+      <p class="filter-count" id="filter-count"></p>
+    </section>
+
+    <section class="book-list" id="book-list"></section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/library.js"></script>
+</body>
+</html>
