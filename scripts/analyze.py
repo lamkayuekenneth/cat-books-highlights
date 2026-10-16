@@ -154,8 +154,18 @@ def main():
         return 0
 
     # 解碼確認（唔會寫落磁碟）
+    debug = {}
     try:
-        base64.b64decode(image_b64, validate=True)
+        raw = base64.b64decode(image_b64, validate=True)
+        import hashlib
+        debug = {
+            "b64_len": len(image_b64),
+            "bytes": len(raw),
+            "mime": detect_mime(image_b64),
+            "sha256": hashlib.sha256(raw).hexdigest()[:16],
+            "model": model,
+        }
+        print("DEBUG:", json.dumps(debug, ensure_ascii=False), flush=True)
     except Exception as e:
         write_result(image_id, {"error": "圖片 base64 無效: %s" % e})
         return 0
