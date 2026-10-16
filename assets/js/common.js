@@ -114,6 +114,17 @@
       });
     },
 
+    /* 讀 repo 上嘅檔案——優先 Contents API（即時最新 commit，冇 raw CDN 延遲），
+       失敗先至 fallback 去 raw。用嚟讀 books.json / pending 結果檔呢啲啱啱先改完嘅檔 */
+    freshText: function (path) {
+      var self = this;
+      return self.readFileMeta(path).then(function (meta) {
+        return meta.content;
+      }).catch(function () {
+        return self.rawText(path);
+      });
+    },
+
     readFileMeta: function (path) {
       var r = this.requireRepo();
       return this.gh('/repos/' + r.owner + '/' + r.repo + '/contents/' + path).then(function (data) {

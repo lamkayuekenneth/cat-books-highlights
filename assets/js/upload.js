@@ -212,7 +212,8 @@
     var attempts = 0;
     function tick() {
       attempts += 1;
-      return CB.rawText('data/pending/' + id + '.json').then(function (text) {
+      /* 用 Contents API 讀（冇 raw CDN 延遲），workflow 一 commit 即刻睇到 */
+      return CB.freshText('data/pending/' + id + '.json').then(function (text) {
         return JSON.parse(text);
       }).catch(function () {
         if (attempts >= POLL_MAX) {
@@ -356,7 +357,7 @@
 
     card.status('儲存緊…');
     card.saveBtn.disabled = true;
-    CB.rawText('data/books.json').then(function (text) {
+    CB.freshText('data/books.json').then(function (text) {
       var rows;
       try { rows = JSON.parse(text); } catch (e) { rows = []; }
       if (!Array.isArray(rows)) rows = [];

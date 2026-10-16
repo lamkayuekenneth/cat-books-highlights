@@ -33,7 +33,8 @@
   }
 
   function load() {
-    return CB.rawText('data/books.json').then(function (text) {
+    /* 用 Contents API 讀（冇 raw CDN 延遲）：啱啱儲存完即刻睇到最新資料 */
+    return CB.freshText('data/books.json').then(function (text) {
       allRows = JSON.parse(text);
       if (!Array.isArray(allRows)) allRows = [];
     }).catch(function (err) {

@@ -34,7 +34,7 @@
   baseUrlInput.value = 'https://openrouter.ai/api/v1';
 
   try {
-    CB.rawText('config/settings.json').then(function (text) {
+    CB.freshText('config/settings.json').then(function (text) {
       var s = JSON.parse(text);
       if (s.model) modelInput.value = s.model;
       if (s.base_url) baseUrlInput.value = s.base_url;
