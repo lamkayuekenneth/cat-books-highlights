@@ -46,14 +46,19 @@
       <h2 class="section-title">🤖 AI 模型設定</h2>
       <div class="field">
         <label class="field-label" for="model">Model（OpenRouter model ID）</label>
-        <input id="model" type="text" list="model-list" placeholder="openai/gpt-4o-mini" autocomplete="off">
+        <input id="model" type="text" list="model-list" placeholder="qwen/qwen3-vl-30b-a3b-instruct" autocomplete="off">
         <datalist id="model-list">
+          <option value="qwen/qwen3-vl-30b-a3b-instruct">
+          <option value="qwen/qwen2.5-vl-72b-instruct">
           <option value="openai/gpt-4o-mini">
-          <option value="openai/gpt-4o">
-          <option value="anthropic/claude-3-5-sonnet">
-          <option value="google/gemini-2.0-flash-exp">
-          <option value="qwen/qwen-2.5-vl-72b-instruct">
+          <option value="google/gemini-2.5-flash">
+          <option value="moondream/moondream3.1-9b-a2b">
         </datalist>
+        <p class="hint">
+          ⚠️ 建議用 <strong>qwen/qwen3-vl-30b-a3b-instruct</strong>（預設）：OCR 準、平、對書頁冇限制。<br>
+          ❌ <code>moondream*</code> 太弱，讀唔到書頁細字。<br>
+          ❌ <code>openai/gpt-4o-mini</code> 同 <code>google/gemini-*</code> 對「書頁文字」有 ToS 審查（會回 403），唔啱呢個用途。
+        </p>
       </div>
       <div class="field">
         <label class="field-label" for="base-url">Base URL</label>
