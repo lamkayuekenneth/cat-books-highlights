@@ -5,12 +5,13 @@
 (function () {
   'use strict';
 
-  var MAX_DIM = 1600;        /* 壓縮後最長邊 */
-  var JPEG_QUALITY = 0.8;
-  /* repository_dispatch 嘅 client_payload 可載幾 MB（唔似 workflow_dispatch 得 65,535 字元），
-     圖片可以高質素直送；目標 base64 ≤1,200,000 字元（約 900KB JPEG）——書頁細字都讀得清楚 */
-  var MAX_B64_LEN = 1200000;
-  var MIN_DIM = 800;         /* 縮細下限，太細就冇辦法讀到書名 */
+  var MAX_DIM = 1280;        /* 壓縮後最長邊 */
+  var JPEG_QUALITY = 0.78;
+  var WEBP_QUALITY = 0.75;
+  /* GitHub 對 workflow_dispatch inputs 同 repository_dispatch client_payload 嘅上限都係 65,535 字元；
+     圖片 base64 目標 ≤60,000 字元。用 WebP（瀏覽器支援時）喺同一預算下解像度高出約 40%，細字更易讀 */
+  var MAX_B64_LEN = 60000;
+  var MIN_DIM = 480;         /* 縮細下限，太細就冇辦法讀到書名 */
   var POLL_INTERVAL = 4000;  /* ms */
   var POLL_MAX = 60;         /* 約 4 分鐘 */
 
@@ -41,6 +42,17 @@
   });
 
   /* ---------- 圖片壓縮（只喺瀏覽器記憶體，唔會上傳原相） ---------- */
+  var IMG_FORMAT = null; /* 'webp' 或 'jpeg'，首次使用時偵測 */
+
+  function pickFormat() {
+    if (IMG_FORMAT) return IMG_FORMAT;
+    var c = document.createElement('canvas');
+    c.width = 2;
+    c.height = 2;
+    IMG_FORMAT = c.toDataURL('image/webp', 0.8).indexOf('data:image/webp') === 0 ? 'webp' : 'jpeg';
+    return IMG_FORMAT;
+  }
+
   function loadImage(file) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
@@ -59,7 +71,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(source, 0, 0, w, h);
-    return canvas.toDataURL('image/jpeg', quality);
+    return canvas.toDataURL('image/' + pickFormat(), quality);
   }
 
   function compressImage(file) {
@@ -77,23 +89,23 @@
         var scale = Math.min(1, MAX_DIM / Math.max(source.width, source.height));
         var w = Math.max(1, Math.round(source.width * scale));
         var h = Math.max(1, Math.round(source.height * scale));
-        var quality = JPEG_QUALITY;
+        var quality = pickFormat() === 'webp' ? WEBP_QUALITY : JPEG_QUALITY;
         var dataUrl = render(source, w, h, quality);
         var base64 = dataUrl.split(',')[1];
         var shrunk = false;
         var guard = 0;
-        /* 自適應縮細：每次最多縮 30% 尺寸、品質 -0.08，直到符合 GitHub input 上限 */
+        /* 自適應縮細：每次最多縮 30% 尺寸、品質 -0.05，直到符合 GitHub input 上限 */
         while (base64.length > MAX_B64_LEN && guard < 8) {
           var s = Math.max(0.7, Math.sqrt(MAX_B64_LEN / base64.length));
           w = Math.max(MIN_DIM, Math.round(w * s));
           h = Math.max(MIN_DIM, Math.round(h * s));
-          quality = Math.max(0.45, quality - 0.08);
+          quality = Math.max(0.45, quality - 0.05);
           dataUrl = render(source, w, h, quality);
           base64 = dataUrl.split(',')[1];
           shrunk = true;
           guard += 1;
         }
-        return { base64: base64, dataUrl: dataUrl, shrunk: shrunk };
+        return { base64: base64, dataUrl: dataUrl, shrunk: shrunk, format: pickFormat() };
       } finally {
         if (isBitmap) source.close();
       }

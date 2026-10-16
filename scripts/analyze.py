@@ -75,7 +75,21 @@ def parse_ai_json(content):
     return None
 
 
+def detect_mime(image_b64):
+    """由 base64 開頭幾個位元組偵測圖片格式（JPEG / PNG / WebP）。"""
+    try:
+        head = base64.b64decode(image_b64[:32])
+    except Exception:
+        return "image/jpeg"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    if head[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    return "image/jpeg"
+
+
 def call_openrouter(image_b64, model, base_url, api_key):
+    mime = detect_mime(image_b64)
     payload = {
         "model": model,
         "messages": [
@@ -85,7 +99,7 @@ def call_openrouter(image_b64, model, base_url, api_key):
                 "content": [
                     {
                         "type": "image_url",
-                        "image_url": {"url": "data:image/jpeg;base64," + image_b64},
+                        "image_url": {"url": "data:%s;base64,%s" % (mime, image_b64)},
                     },
                     {"type": "text", "text": USER_PROMPT},
                 ],
