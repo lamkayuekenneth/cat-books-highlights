@@ -1,3 +1,0 @@
-{
-  "error": "OpenRouter HTTP 403: {\"error\":{\"message\":\"The request is prohibited due to a violation of provider Terms Of Service.\",\"code\":403,\"metadata\":{\"provider_name\":null,\"previous_errors\":[{\"code\":403,\"message\":\"The request is prohibited due to a violation of provider Terms Of Service.\"}]}},\"user_id\":\"user_328N83kBUSRhwycVRaPX3NI0T15\"}"
-}
