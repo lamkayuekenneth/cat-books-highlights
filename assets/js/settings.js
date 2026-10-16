@@ -29,11 +29,13 @@
   modelInput.value = 'openai/gpt-4o-mini';
   baseUrlInput.value = 'https://openrouter.ai/api/v1';
 
-  CB.rawText('config/settings.json').then(function (text) {
-    var s = JSON.parse(text);
-    if (s.model) modelInput.value = s.model;
-    if (s.base_url) baseUrlInput.value = s.base_url;
-  }).catch(function () { /* 未有設定檔都冇問題 */ });
+  try {
+    CB.rawText('config/settings.json').then(function (text) {
+      var s = JSON.parse(text);
+      if (s.model) modelInput.value = s.model;
+      if (s.base_url) baseUrlInput.value = s.base_url;
+    }).catch(function () { /* 未有設定檔都冇問題 */ });
+  } catch (e) { /* 未填 owner/repo 時跳過（例如本地開檔） */ }
 
   function saveConn() {
     CB.setOwnerRepo(ownerInput.value, repoInput.value);
