@@ -36,14 +36,14 @@ SYSTEM_PROMPT = (
     "請完成兩件事：\n"
     "1. 如果頁面頁眉或頁腳印有書名，寫出書名；如果嗰行明顯係章節名或內文，就寫空字串。\n"
     "2. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅詞彙或短語；"
-    "有就逐個列出，保留原文語言（中英夾雜就照寫），每個獨立一項，唔好加 # 符號，"
+    "有就逐個列出（最多 15 個，唔好重複），保留原文語言（中英夾雜就照寫），每個獨立一項，唔好加 # 符號，"
     "唔好自行擴寫或翻譯。\n"
     "只可以輸出一個 JSON 物件，格式嚴格如下：\n"
     '{"book_title": "書名", "tags": ["關鍵字1", "關鍵字2"]}\n'
     "唔好輸出任何其他文字、解釋、或者 markdown 標記。"
 )
 
-USER_PROMPT = "請睇吓呢張書頁相片，寫出書名同螢光筆標記嘅重點詞彙。"
+USER_PROMPT = "請睇吓呢張書頁相片，寫出書名同螢光筆標記嘅重點詞彙（最多 15 個，唔好重複）。"
 
 
 def write_result(image_id, result):
@@ -109,6 +109,7 @@ def call_openrouter(image_b64, model, base_url, api_key):
             },
         ],
         "temperature": 0.1,
+        "max_tokens": 500,
     }
     req = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions",
@@ -195,7 +196,7 @@ def main():
     seen = set()
     for t in raw_tags:
         t = str(t).strip().lstrip("#").strip()
-        if t and t not in seen:
+        if t and t not in seen and len(tags) < 30:
             seen.add(t)
             tags.append(t)
 

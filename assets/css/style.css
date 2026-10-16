@@ -279,3 +279,24 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 @media (min-width: 721px) {
   .settings-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- 直連模式提示 banner ---------- */
+.mode-banner {
+  max-width: 720px;
+  margin: 0 auto 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: .92rem;
+  line-height: 1.6;
+}
+.mode-banner.warn {
+  background: #fff8e6;
+  border: 1px solid #e8d9a8;
+  color: #6b5d1e;
+}
+.mode-banner.ok {
+  background: #f0faf0;
+  border: 1px solid #bfe3bf;
+  color: #2d6a2d;
+}
+.mode-banner a { font-weight: 700; }

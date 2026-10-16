@@ -27,7 +27,23 @@
     '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
     '{"book_title": "書名", "tags": ["關鍵字1", "關鍵字2"]}\n' +
     '唔好輸出任何其他文字、解釋、或者 markdown 標記。';
-  var USER_PROMPT = '請睇吓呢張書頁相片，寫出書名同螢光筆標記嘅重點詞彙。';
+  var USER_PROMPT = '請睇吓呢張書頁相片，寫出書名同螢光筆標記嘅重點詞彙（最多 15 個，唔好重複）。';
+
+  /* ---------- 直連模式提示 banner：未啟用直連就話畀用戶知 ---------- */
+  (function showModeBanner() {
+    var banner = document.getElementById('mode-banner');
+    var text = document.getElementById('mode-banner-text');
+    if (!banner || !text) return;
+    if (CB.getOrKey()) {
+      banner.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    banner.className = 'mode-banner warn';
+    text.innerHTML = '⏳ 你而家用緊 <b>GitHub Actions 後備模式</b>（約 1–2 分鐘先有結果）。' +
+      '去 <a href="settings.html" style="color:inherit;text-decoration:underline;">⚙️ 設定</a> 嘅「🚀 瀏覽器直連」貼你嘅 OpenRouter API Key 一次，' +
+      '之後上傳就 <b>幾秒</b>出結果。';
+  })();
 
   var dz = document.getElementById('dropzone');
   var fileInput = document.getElementById('file-input');
@@ -168,7 +184,7 @@
           ]}
         ],
         temperature: 0.1,
-        max_tokens: 300
+        max_tokens: 500
       })
     }).then(function (res) {
       return res.json().catch(function () { return null; }).then(function (j) {
@@ -184,7 +200,7 @@
         var seen = {};
         (Array.isArray(parsed.tags) ? parsed.tags : []).forEach(function (t) {
           t = String(t).trim().replace(/^#+/, '').trim();
-          if (t && !seen[t]) { seen[t] = true; tags.push(t); }
+          if (t && !seen[t] && tags.length < 30) { seen[t] = true; tags.push(t); }
         });
         return { book_title: book_title, tags: tags };
       });
