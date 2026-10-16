@@ -158,6 +158,38 @@
       .then(function () { saveKeyBtn.disabled = false; });
   });
 
+  /* ---------- 驗證 OpenRouter Key（直接 call OpenRouter /api/v1/key） ---------- */
+  var verifyKeyBtn = document.getElementById('verify-key');
+  var keyVerifyStatus = document.getElementById('key-verify-status');
+  verifyKeyBtn.addEventListener('click', function () {
+    var key = apiKeyInput.value.trim();
+    if (!key) return toast('請先喺上面輸入 API Key', 'warn');
+    verifyKeyBtn.disabled = true;
+    keyVerifyStatus.className = 'status';
+    keyVerifyStatus.textContent = '驗證緊…（call OpenRouter）';
+    fetch('https://openrouter.ai/api/v1/key', {
+      headers: { Authorization: 'Bearer ' + key }
+    }).then(function (res) {
+      if (res.ok) {
+        return res.json().then(function (info) {
+          keyVerifyStatus.className = 'status ok';
+          var label = (info && info.data && info.data.label) ? '（' + info.data.label + '）' : '';
+          keyVerifyStatus.textContent = '✓ Key 有效' + label + '，可以放心儲存';
+          toast('✓ OpenRouter Key 有效', 'ok');
+        });
+      }
+      return res.json().catch(function () { return null; }).then(function (j) {
+        var msg = (j && j.error && j.error.message) ? j.error.message : ('HTTP ' + res.status);
+        keyVerifyStatus.className = 'status error';
+        keyVerifyStatus.textContent = '✗ Key 無效：' + msg + '。請去 openrouter.ai/settings/keys 複製正確嘅 key';
+        toast('✗ Key 無效', 'error');
+      });
+    }).catch(function (err) {
+      keyVerifyStatus.className = 'status error';
+      keyVerifyStatus.textContent = '✗ 驗證失敗（' + err.message + '），可能係網絡問題';
+    }).then(function () { verifyKeyBtn.disabled = false; });
+  });
+
   function refreshSecretState() {
     secretState.className = 'status';
     secretState.textContent = '檢查緊…';
