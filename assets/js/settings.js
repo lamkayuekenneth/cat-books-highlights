@@ -84,16 +84,36 @@
 
   /* ---------- API Key → GitHub Actions secret ---------- */
   var sodiumPromise = null;
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error('載入失敗：' + src)); };
+      document.head.appendChild(s);
+    });
+  }
   function sodiumReady() {
     if (!sodiumPromise) {
-      sodiumPromise = new Promise(function (resolve, reject) {
-        if (window.sodium) { resolve(window.sodium); return; }
-        var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/modules-sumo/libsodium-wrappers.min.js';
-        s.onload = function () { resolve(window.sodium); };
-        s.onerror = function () { reject(new Error('無法載入加密庫（libsodium CDN 唔通）')); };
-        document.head.appendChild(s);
-      }).then(function (sodium) { return sodium.ready.then(function () { return sodium; }); });
+      /* 優先本地檔案（隨 repo 分發，離線可用）；失敗先至試 CDN */
+      var candidates = [
+        ['assets/js/libsodium.js', 'assets/js/libsodium-wrappers.js'],
+        ['https://cdn.jsdelivr.net/npm/libsodium@0.7.15/dist/modules/libsodium.js',
+         'https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/modules/libsodium-wrappers.js']
+      ];
+      function tryAt(i) {
+        if (i >= candidates.length) {
+          return Promise.reject(new Error('無法載入加密庫（libsodium CDN 唔通）'));
+        }
+        var pair = candidates[i];
+        return loadScript(pair[0]).then(function () { return loadScript(pair[1]); })
+          .then(function () {
+            if (!window.sodium) throw new Error('sodium 未初始化');
+            return window.sodium.ready.then(function () { return window.sodium; });
+          })
+          .catch(function () { return tryAt(i + 1); });
+      }
+      sodiumPromise = tryAt(0);
     }
     return sodiumPromise;
   }
