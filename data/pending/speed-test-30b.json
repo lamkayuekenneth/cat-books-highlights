@@ -1,0 +1,15 @@
+{
+  "book_title": "小夫的人際學",
+  "tags": [
+    "自命不凡",
+    "嘲笑",
+    "接受自己原有的樣子"
+  ],
+  "_debug": {
+    "b64_len": 45748,
+    "bytes": 34310,
+    "mime": "image/webp",
+    "sha256": "c3f95389ef990a3f",
+    "model": "qwen/qwen3-vl-30b-a3b-instruct"
+  }
+}
