@@ -12,8 +12,8 @@
      圖片 base64 目標 ≤60,000 字元。用 WebP（瀏覽器支援時）喺同一預算下解像度高出約 40%，細字更易讀 */
   var MAX_B64_LEN = 60000;
   var MIN_DIM = 480;         /* 縮細下限，太細就冇辦法讀到書名 */
-  var POLL_INTERVAL = 4000;  /* ms */
-  var POLL_MAX = 60;         /* 約 4 分鐘 */
+  var POLL_INTERVAL = 5000;  /* ms */
+  var POLL_MAX = 72;         /* 約 6 分鐘 */
 
   var dz = document.getElementById('dropzone');
   var fileInput = document.getElementById('file-input');

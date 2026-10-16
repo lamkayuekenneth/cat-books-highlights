@@ -22,9 +22,13 @@ import base64
 import json
 import os
 import re
+import socket
 import sys
 import urllib.error
 import urllib.request
+
+# 硬性 socket 層 timeout：就算 urlopen timeout 失效都唔會卡死成個 workflow
+socket.setdefaulttimeout(120)
 
 SYSTEM_PROMPT = (
     "你係一個協助整理閱讀筆記嘅助手。用戶影咗一本書其中一頁嘅相片，"
@@ -118,11 +122,13 @@ def call_openrouter(image_b64, model, base_url, api_key):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=180) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")[:500]
         raise RuntimeError("OpenRouter HTTP %s: %s" % (e.code, body))
+    except socket.timeout:
+        raise RuntimeError("OpenRouter 回應逾時（120 秒）：model 太慢或暫時繁忙，請稍後再試或轉另一個 model")
     except Exception as e:  # noqa: BLE001
         raise RuntimeError("OpenRouter request failed: %s" % e)
 
