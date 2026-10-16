@@ -194,7 +194,7 @@ def main():
             seen.add(t)
             tags.append(t)
 
-    write_result(image_id, {"book_title": book_title, "tags": tags})
+    write_result(image_id, {"book_title": book_title, "tags": tags, "_debug": debug})
     print("OK: %s -> book_title=%r tags=%r" % (image_id, book_title, tags))
     return 0
 
