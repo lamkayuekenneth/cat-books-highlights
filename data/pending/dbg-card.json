@@ -1,0 +1,14 @@
+{
+  "book_title": "",
+  "tags": [
+    "1",
+    "2"
+  ],
+  "_debug": {
+    "b64_len": 17860,
+    "bytes": 13394,
+    "mime": "image/jpeg",
+    "sha256": "fd08304d4b6bb319",
+    "model": "moondream/moondream3.1-9b-a2b"
+  }
+}
