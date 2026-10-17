@@ -242,9 +242,12 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .book-table .cell-tag { word-break: break-word; }
 .book-table .cell-page { white-space: nowrap; color: var(--ink-soft); }
 .book-table .cell-actions { white-space: nowrap; text-align: right; }
+.book-table mark { background: #ffe58a; color: inherit; padding: 0 1px; border-radius: 3px; }
 .row-input { width: 100%; min-width: 110px; box-sizing: border-box; padding: 7px 9px; font-size: .9rem; }
 .btn-small { padding: 5px 10px; font-size: .8rem; }
 .btn-danger-ghost { color: var(--danger); background: transparent; border: 1px solid var(--danger); }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.section-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- 設定頁 ---------- */
 .settings-grid { display: grid; gap: 16px; }

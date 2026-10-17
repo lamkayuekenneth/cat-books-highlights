@@ -16,6 +16,7 @@
   var countEl = document.getElementById('filter-count');
   var clearBtn = document.getElementById('filter-clear');
   var loadBtn = document.getElementById('reload');
+  var exportBtn = document.getElementById('export-csv');
 
   titleFilter.addEventListener('input', render);
   tagFilter.addEventListener('input', render);
@@ -25,11 +26,53 @@
     render();
   });
   if (loadBtn) loadBtn.addEventListener('click', load);
+  if (exportBtn) exportBtn.addEventListener('click', exportCsv);
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
+  }
+  function escReg(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  /* 將命中嘅 filter 文字包 <mark>（先 escape HTML，再對返命中字） */
+  function hl(text, q) {
+    var s = esc(text);
+    if (!q) return s;
+    try {
+      var re = new RegExp('(' + escReg(esc(q)) + ')', 'gi');
+      return s.replace(re, '<mark>$1</mark>');
+    } catch (e) { return s; }
+  }
+
+  /* 匯出當前 filter 結果做 CSV（UTF-8 BOM，Excel 開到繁體中文） */
+  function exportCsv() {
+    var rows = filtered(sorted());
+    if (!rows.length) return toast('冇資料可匯出', 'warn');
+    var lines = [['書名', 'tag', '頁數'].join(',')];
+    rows.forEach(function (r) {
+      var cells = [r.book_title || '', r.tag || '', r.page || ''].map(function (v) {
+        v = String(v);
+        if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+        return v;
+      });
+      lines.push(cells.join(','));
+    });
+    var now = new Date();
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    var stamp = now.getFullYear() + p2(now.getMonth() + 1) + p2(now.getDate()) +
+      '_' + p2(now.getHours()) + p2(now.getMinutes());
+    var blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'catbookmark_books_' + stamp + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    toast('已匯出 ' + rows.length + ' 條記錄', 'ok');
   }
 
   function load() {
@@ -110,8 +153,8 @@
     var tr = document.createElement('tr');
     tr.className = 'book-row';
     tr.innerHTML =
-      '<td class="cell-title">' + esc(row.book_title || '') + '</td>' +
-      '<td class="cell-tag">' + esc(row.tag || '') + '</td>' +
+      '<td class="cell-title">' + hl(row.book_title || '', titleFilter.value.trim()) + '</td>' +
+      '<td class="cell-tag">' + hl(row.tag || '', tagFilter.value.trim()) + '</td>' +
       '<td class="cell-page">' + esc(row.page || '—') + '</td>' +
       '<td class="cell-actions">' +
       '  <button class="btn btn-small" data-role="edit" type="button">編輯</button>' +
