@@ -32,19 +32,22 @@ socket.setdefaulttimeout(120)
 
 SYSTEM_PROMPT = (
     "你係一個協助整理閱讀筆記嘅助手。用戶影咗一本書其中一頁嘅相片，"
-    "頁面有書名同螢光筆標記。\n"
-    "請完成兩件事：\n"
-    "1. 如果頁面頁眉或頁腳印有書名，寫出書名；如果嗰行明顯係章節名或內文，就寫空字串。\n"
-    "2. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅文字；"
+    "頁面可能有書名、章節名、頁碼同螢光筆標記。\n"
+    "請完成三件事：\n"
+    "1. 核實頁面有冇書名：檢查頁眉/頁腳（header / footer）印嘅文字，判斷係書名定係章節名。"
+    "如果係明顯嘅書名，就寫出書名；如果嗰行係章節名（例如「第三章」「第X節」）或者內文，就寫空字串。\n"
+    "2. 如果頁面印有頁碼（通常喺頁面頂部或底部嘅獨立數字，例如 12、150、-25-、p.87），"
+    "寫出頁碼（淨係寫數字，唔好要 p.、第、- 呢啲前後綴）；冇頁碼就寫空字串。\n"
+    "3. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅文字；"
     "每一處螢光筆標記，將嗰句（或嗰段）文字原句照抄，成為一個 tag；"
     "唔好拆開、唔好消化、唔好改寫、唔好翻譯、唔好擴寫、唔好衍生更多 tag；"
     "有幾多處螢光筆，就係幾多個 tag。\n"
     "只可以輸出一個 JSON 物件，格式嚴格如下：\n"
-    '{"book_title": "書名", "tags": ["螢光筆原句1", "螢光筆原句2"]}\n'
-    "唔好輸出任何其他文字、解釋、或者 markdown 標記。"
+    '{"book_title": "書名", "page": "頁碼", "tags": ["螢光筆原句1", "螢光筆原句2"]}\n'
+    "書名或頁碼搵唔到就寫空字串。唔好輸出任何其他文字、解釋、或者 markdown 標記。"
 )
 
-USER_PROMPT = "請睇吓呢張書頁相片，寫出書名；每一處螢光筆標記嘅原句照抄成為一個 tag（唔好消化、改寫或拆字）。"
+USER_PROMPT = "請睇吓呢張書頁相片：核實有冇書名（冇就留空）、寫出頁碼（有先寫），同每一處螢光筆標記嘅原句照抄成為一個 tag。"
 
 
 def write_result(image_id, result):
@@ -190,6 +193,7 @@ def main():
         return 0
 
     book_title = str(parsed.get("book_title") or "").strip()
+    page = str(parsed.get("page") or "").strip()
     raw_tags = parsed.get("tags")
     if not isinstance(raw_tags, list):
         raw_tags = []
@@ -201,8 +205,8 @@ def main():
             seen.add(t)
             tags.append(t)
 
-    write_result(image_id, {"book_title": book_title, "tags": tags, "_debug": debug})
-    print("OK: %s -> book_title=%r tags=%r" % (image_id, book_title, tags))
+    write_result(image_id, {"book_title": book_title, "page": page, "tags": tags, "_debug": debug})
+    print("OK: %s -> book_title=%r page=%r tags=%r" % (image_id, book_title, page, tags))
     return 0
 
 

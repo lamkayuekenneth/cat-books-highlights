@@ -18,17 +18,20 @@
   /* ---------- 直連 OpenRouter 用嘅 prompt（同 analyze.py 一致） ---------- */
   var SYSTEM_PROMPT =
     '你係一個協助整理閱讀筆記嘅助手。用戶影咗一本書其中一頁嘅相片，' +
-    '頁面有書名同螢光筆標記。\n' +
-    '請完成兩件事：\n' +
-    '1. 如果頁面頁眉或頁腳印有書名，寫出書名；如果嗰行明顯係章節名或內文，就寫空字串。\n' +
-    '2. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅文字；' +
+    '頁面可能有書名、章節名、頁碼同螢光筆標記。\n' +
+    '請完成三件事：\n' +
+    '1. 核實頁面有冇書名：檢查頁眉/頁腳（header / footer）印嘅文字，判斷係書名定係章節名。' +
+    '如果係明顯嘅書名，就寫出書名；如果嗰行係章節名（例如「第三章」「第X節」）或者內文，就寫空字串。\n' +
+    '2. 如果頁面印有頁碼（通常喺頁面頂部或底部嘅獨立數字，例如 12、150、-25-、p.87），' +
+    '寫出頁碼（淨係寫數字，唔好要 p.、第、- 呢啲前後綴）；冇頁碼就寫空字串。\n' +
+    '3. 睇下頁面有冇螢光筆（marker / highlighter）標記嘅文字；' +
     '每一處螢光筆標記，將嗰句（或嗰段）文字原句照抄，成為一個 tag；' +
     '唔好拆開、唔好消化、唔好改寫、唔好翻譯、唔好擴寫、唔好衍生更多 tag；' +
     '有幾多處螢光筆，就係幾多個 tag。\n' +
     '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
-    '{"book_title": "書名", "tags": ["螢光筆原句1", "螢光筆原句2"]}\n' +
-    '唔好輸出任何其他文字、解釋、或者 markdown 標記。';
-  var USER_PROMPT = '請睇吓呢張書頁相片，寫出書名；每一處螢光筆標記嘅原句照抄成為一個 tag（唔好消化、改寫或拆字）。';
+    '{"book_title": "書名", "page": "頁碼", "tags": ["螢光筆原句1", "螢光筆原句2"]}\n' +
+    '書名或頁碼搵唔到就寫空字串。唔好輸出任何其他文字、解釋、或者 markdown 標記。';
+  var USER_PROMPT = '請睇吓呢張書頁相片：核實有冇書名（冇就留空）、寫出頁碼（有先寫），同每一處螢光筆標記嘅原句照抄成為一個 tag。';
 
   /* ---------- 直連模式提示 banner：未啟用直連就話畀用戶知 ---------- */
   (function showModeBanner() {
@@ -197,13 +200,14 @@
         var parsed = parseAiJson(content);
         if (!parsed) throw new Error('模型回應無法解析');
         var book_title = String(parsed.book_title || '').trim();
+        var page = String(parsed.page || '').trim();
         var tags = [];
         var seen = {};
         (Array.isArray(parsed.tags) ? parsed.tags : []).forEach(function (t) {
           t = String(t).trim().replace(/^#+/, '').trim();
           if (t && !seen[t] && tags.length < 30) { seen[t] = true; tags.push(t); }
         });
-        return { book_title: book_title, tags: tags };
+        return { book_title: book_title, page: page, tags: tags };
       });
     });
   }
@@ -247,6 +251,10 @@
       '    <input data-role="title" type="text" placeholder="書名…" autocomplete="off">' +
       '  </div>' +
       '  <div class="field">' +
+      '    <span class="field-label">頁數（可編輯，冇就留空）</span>' +
+      '    <input data-role="page" type="text" placeholder="例如 150" autocomplete="off">' +
+      '  </div>' +
+      '  <div class="field">' +
       '    <span class="field-label">標籤（#tag，可刪除／編輯／新增）</span>' +
       '    <div class="chips" data-role="chips"></div>' +
       '    <input class="add-tag" data-role="add" type="text" placeholder="＋ 新增標籤，按 Enter" autocomplete="off">' +
@@ -260,6 +268,7 @@
     this.thumbEl = this.el.querySelector('[data-role="thumb"]');
     this.statusEl = this.el.querySelector('[data-role="status"]');
     this.titleInput = this.el.querySelector('[data-role="title"]');
+    this.pageInput = this.el.querySelector('[data-role="page"]');
     this.chipsEl = this.el.querySelector('[data-role="chips"]');
     this.addInput = this.el.querySelector('[data-role="add"]');
     this.saveBtn = this.el.querySelector('[data-role="save"]');
@@ -338,6 +347,7 @@
 
   Card.prototype.setResult = function (result) {
     this.titleInput.value = result.book_title || '';
+    this.pageInput.value = result.page || '';
     this._renderChips(Array.isArray(result.tags) ? result.tags : []);
     this.saveBtn.disabled = false;
     this.status('AI 分析完成，可以編輯', 'ok');
@@ -352,6 +362,7 @@
     var card = this;
     if (card._saved) return;
     var title = card.titleInput.value.trim();
+    var page = card.pageInput.value.trim();
     var tags = card.getTags();
     if (!title) return toast('請輸入書名', 'warn');
     if (!tags.length) return toast('請至少保留一個標籤', 'warn');
@@ -363,10 +374,12 @@
       try { rows = JSON.parse(text); } catch (e) { rows = []; }
       if (!Array.isArray(rows)) rows = [];
       var seen = {};
-      rows.forEach(function (r) { seen[(r.book_title || '') + '\u0000' + (r.tag || '')] = true; });
+      rows.forEach(function (r) {
+        seen[(r.book_title || '') + '\u0000' + (r.page || '') + '\u0000' + (r.tag || '')] = true;
+      });
       tags.forEach(function (t) {
-        var key = title + '\u0000' + t;
-        if (!seen[key]) { rows.push({ book_title: title, tag: t }); seen[key] = true; }
+        var key = title + '\u0000' + page + '\u0000' + t;
+        if (!seen[key]) { rows.push({ book_title: title, page: page, tag: t }); seen[key] = true; }
       });
       return rows;
     }).then(function (rows) {
