@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 設定：GitHub 連線、AI 模型、OpenRouter API Key">
   <title>CatBookmark 貓書籤 · 設定</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261021">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261022">
 </head>
 <body class="page-settings">
   <header class="topbar">
@@ -22,7 +22,7 @@
 
   <main class="container">
     <div class="page-banner" id="page-banner" hidden></div>
-    <p class="version-tag">版本 <span id="app-version">20261021</span>（如果呢度同「測試 Model」掣唔夾，就係瀏覽器 cache 舊版：硬刷新一次）</p>
+    <p class="version-tag">版本 <span id="app-version">20261022</span>（如果呢度同「測試 Model」掣唔夾，就係瀏覽器 cache 舊版：硬刷新一次）</p>
     <div class="settings-grid">
     <section class="card">
       <h2 class="section-title">💾 瀏覽器儲存狀態（localStorage）</h2>
@@ -65,16 +65,18 @@
         <label class="field-label" for="model">Model（OpenRouter model ID）</label>
         <input id="model" type="text" list="model-list" placeholder="qwen/qwen3-vl-8b-instruct" autocomplete="off">
         <datalist id="model-list">
+          <option value="qwen/qwen3-vl-235b-a22b-instruct">
           <option value="qwen/qwen3-vl-8b-instruct">
+          <option value="qwen/qwen3-vl-30b-a3b-thinking">
+          <option value="qwen/qwen3-vl-30b-a3b-instruct">
           <option value="qwen/qwen3.8-flash">
           <option value="qwen/qwen3.6-flash">
-          <option value="qwen/qwen3-vl-30b-a3b-instruct">
           <option value="qwen/qwen2.5-vl-72b-instruct">
         </datalist>
         <p class="hint">
           🚀 直連模式（幾秒出結果）同 Actions 後備模式都用呢個 model。<br>
-          ⚡ 最快：<code>qwen/qwen3-vl-8b-instruct</code>（預設）或 <code>qwen/qwen3.8-flash</code>（更快，可試）。<br>
-          🎯 最準：<code>qwen/qwen3-vl-30b-a3b-instruct</code>（準但慢少少）。<br>
+          🏆 最穩（實測豎排螢光筆字全中）：<code>qwen/qwen3-vl-235b-a22b-instruct</code>；⚡ 最快：<code>qwen/qwen3-vl-8b-instruct</code>（快但有時錯字）。<br>
+          ⚠️ Qwen 視覺 model 係 <code>vl</code>（字母 V-L），唔係 <code>v1</code>（V-1）；打錯會「not a valid model ID」。<br>
           ❌ <code>moondream*</code> 太弱讀唔到細字；❌ <code>openai/gpt-4o-mini</code>、<code>google/gemini-*</code> 對「書頁文字」有 ToS 審查（403）。
         </p>
       </div>
@@ -138,8 +140,8 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261021"></script>
-  <script src="assets/js/settings.js?v=20261021"></script>
+  <script src="assets/js/common.js?v=20261022"></script>
+  <script src="assets/js/settings.js?v=20261022"></script>
   <script>
     /* 安全網：如果 settings.js 冇載到（舊 cache），2.5 秒後出橫幅叫人硬刷新 */
     setTimeout(function () {

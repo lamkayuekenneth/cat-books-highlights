@@ -111,6 +111,9 @@
     var baseUrl = normBase(baseUrlInput.value.trim());
     if (!model) return toast('請輸入 model 名稱', 'warn');
     if (!baseUrl) return toast('請輸入 base URL', 'warn');
+    if (/qwen3-v1-/i.test(model)) {
+      return toast('⚠️ 打錯喇：Qwen 視覺 model 係 vl（字母 V-L），唔係 v1（V-1）。例：qwen/qwen3-vl-235b-a22b-instruct', 'warn');
+    }
     if (baseUrlInput.value.trim() !== baseUrl) baseUrlInput.value = baseUrl; /* 即場修正輸入框 */
     saveAiBtn.disabled = true;
     aiStatus.className = 'status';
@@ -150,6 +153,9 @@
     var baseUrl = normBase(baseUrlInput.value.trim());
     if (!model) return toast('請輸入 model 名稱', 'warn');
     if (!baseUrl) return toast('請輸入 base URL', 'warn');
+    if (/qwen3-v1-/i.test(model)) {
+      return toast('⚠️ 打錯喇：Qwen 視覺 model 係 vl（字母 V-L），唔係 v1（V-1）。例：qwen/qwen3-vl-235b-a22b-instruct', 'warn');
+    }
     /* Key 優先取直連（localStorage），未啟用就試後備輸入框 */
     var key = CB.getOrKey() || apiKeyInput.value.trim();
     if (!key) {

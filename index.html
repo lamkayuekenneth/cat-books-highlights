@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 影低書頁，自動抽出書名同螢光筆關鍵字">
   <title>CatBookmark 貓書籤 · 上傳</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261021">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261022">
 </head>
 <body class="page-upload">
   <header class="topbar">
@@ -21,6 +21,7 @@
   </header>
 
   <main class="container">
+    <p class="version-tag" hidden id="version-tag">版本 <span id="app-version">20261022</span>（舊 cache 會令功能冇反應，硬刷新一次）</p>
     <div class="page-banner" id="page-banner" hidden></div>
     <div class="mode-banner" id="mode-banner" hidden>
       <span id="mode-banner-text"></span>
@@ -46,7 +47,21 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261021"></script>
-  <script src="assets/js/upload.js?v=20261021"></script>
+  <script src="assets/js/common.js?v=20261022"></script>
+  <script src="assets/js/upload.js?v=20261022"></script>
+  <script>
+    /* 版本標籤 + 載入安全網：upload.js 冇載到（舊 cache）就出橫幅 */
+    try { document.getElementById('version-tag').hidden = false; } catch (e) {}
+    setTimeout(function () {
+      if (!window.__CB_UPLOAD_LOADED) {
+        var b = document.getElementById('page-banner');
+        if (b) {
+          b.hidden = false;
+          b.className = 'page-banner error';
+          b.innerHTML = '⚠ JS 載入失敗或係舊版 cache（儲存／分析可能冇反應）。請<b>硬刷新</b>（長撳「重新整理」揀「清除 cache 並重新載入」）再試。';
+        }
+      }
+    }, 2500);
+  </script>
 </body>
 </html>

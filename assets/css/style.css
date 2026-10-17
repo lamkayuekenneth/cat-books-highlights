@@ -335,6 +335,10 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .page-banner.ok { background: #f0faf0; border: 1px solid #bfe3bf; color: #2d6a2d; }
 .page-banner a { color: inherit; text-decoration: underline; font-weight: 800; }
 
+/* ---------- 書名必填警告 ---------- */
+.field-error { color: var(--danger, #dc2626); font-size: .85rem; margin-top: 5px; font-weight: 600; }
+.input-error { border-color: var(--danger, #dc2626) !important; box-shadow: 0 0 0 2px rgba(220,38,38,.15); }
+
 /* ---------- 版本標籤 ---------- */
 .version-tag { margin: 0 0 12px; font-size: .75rem; color: var(--ink-soft); }
 

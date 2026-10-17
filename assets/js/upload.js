@@ -271,6 +271,7 @@
       '  <div class="field">' +
       '    <span class="field-label">書名（頁眉/頁腳，可編輯）</span>' +
       '    <input data-role="title" type="text" placeholder="書名…" autocomplete="off">' +
+      '    <p class="field-error" data-role="title-error" hidden>⚠ 書名係必填——AI 喺頁面搵唔到書名（可能冇印），你可以手動打返書名，先至可以儲存。</p>' +
       '  </div>' +
       '  <div class="field">' +
       '    <span class="field-label">頁數（可編輯，冇就留空）</span>' +
@@ -295,6 +296,13 @@
     this.addInput = this.el.querySelector('[data-role="add"]');
     this.saveBtn = this.el.querySelector('[data-role="save"]');
     this.discardBtn = this.el.querySelector('[data-role="discard"]');
+    this.titleErrorEl = this.el.querySelector('[data-role="title-error"]');
+
+    /* 書名一打字就收埋警告 */
+    this.titleInput.addEventListener('input', function () {
+      card.titleErrorEl.hidden = true;
+      card.titleInput.classList.remove('input-error');
+    });
 
     /* 預覽只放喺瀏覽器記憶體；儲存後清除 */
     var url = URL.createObjectURL(file);
@@ -386,7 +394,15 @@
     var title = card.titleInput.value.trim();
     var page = card.pageInput.value.trim();
     var tags = card.getTags();
-    if (!title) return toast('請輸入書名', 'warn');
+    if (!title) {
+      card.titleErrorEl.hidden = false;
+      card.titleInput.classList.add('input-error');
+      if (card.titleInput.scrollIntoView) {
+        card.titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      toast('⚠ 書名係必填：請喺「書名」輸入框填返書名先至可以儲存', 'warn');
+      return;
+    }
     if (!tags.length) return toast('請至少保留一個標籤', 'warn');
 
     card.status('儲存緊…');
@@ -527,3 +543,5 @@
 
   window.handleFiles = handleFiles;
 })();
+
+window.__CB_UPLOAD_LOADED = true; /* 畀 index.html 嘅載入檢查用 */
