@@ -188,7 +188,9 @@
   function directAnalyze(dataUrl) {
     var cfg = CB.getAiCache();
     var key = CB.getOrKey();
-    return fetch(cfg.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+    /* Base URL 正規化：剝走用戶可能連埋嘅 /chat/completions（防雙重 endpoint → 404） */
+    var base = String(cfg.baseUrl || '').trim().replace(/\/+$/, '').replace(/\/chat\/completions$/i, '');
+    return fetch(base + '/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + key,

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 設定：GitHub 連線、AI 模型、OpenRouter API Key">
   <title>CatBookmark 貓書籤 · 設定</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261017">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261018">
 </head>
 <body class="page-settings">
   <header class="topbar">
@@ -80,7 +80,8 @@
       <div class="field">
         <label class="field-label" for="base-url">Base URL</label>
         <input id="base-url" type="text" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
-        <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。</p>
+        <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。<br>
+          ⚠️ 只需填到 <code>…/api/v1</code> 就夠，<b>唔好連 <code>/chat/completions</code> 都填埋</b>（系統會自動補上；填埋會變 404）。</p>
       </div>
       <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>，同時記低喺你瀏覽器（直連模式用）。<br>
         測試用嘅 Key 會優先取「🚀 瀏覽器直連」嗰個；未啟用就試「🔑 API Key」輸入框。測試只驗證連線同延遲，唔代表書頁 OCR 一定得（某啲 model 對書頁圖有 ToS 限制）。</p>
@@ -136,7 +137,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261017"></script>
-  <script src="assets/js/settings.js?v=20261017"></script>
+  <script src="assets/js/common.js?v=20261018"></script>
+  <script src="assets/js/settings.js?v=20261018"></script>
 </body>
 </html>

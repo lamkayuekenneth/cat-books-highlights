@@ -140,7 +140,7 @@
   testAiBtn.addEventListener('click', function () {
     saveConn();
     var model = modelInput.value.trim();
-    var baseUrl = baseUrlInput.value.trim();
+    var baseUrl = normBase(baseUrlInput.value.trim());
     if (!model) return toast('請輸入 model 名稱', 'warn');
     if (!baseUrl) return toast('請輸入 base URL', 'warn');
     /* Key 優先取直連（localStorage），未啟用就試後備輸入框 */
@@ -186,6 +186,9 @@
       return res.json().catch(function () { return null; }).then(function (j) {
         if (!res.ok) {
           var msg = (j && j.error) ? (j.error.message || JSON.stringify(j.error)) : ('HTTP ' + res.status);
+          if (res.status === 404) {
+            msg += '——404 通常係：① Base URL 唔好連 /chat/completions 都填埋（只需填到 .../api/v1）；② Model ID 唔啱';
+          }
           throw new Error(msg + '（' + secs + ' 秒）');
         }
         var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
