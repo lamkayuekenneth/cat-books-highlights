@@ -98,13 +98,20 @@
     });
   });
 
+  /* Base URL 正規化：有啲用戶會連 /chat/completions 一齊填，
+     剝走尾端嘅 /chat/completions 同斜線，等後續 call 唔會變雙重 endpoint */
+  function normBase(u) {
+    return String(u || '').trim().replace(/\/+$/, '').replace(/\/chat\/completions$/i, '');
+  }
+
   /* ---------- AI model / base_url → config/settings.json ---------- */
   saveAiBtn.addEventListener('click', function () {
     saveConn();
     var model = modelInput.value.trim();
-    var baseUrl = baseUrlInput.value.trim();
+    var baseUrl = normBase(baseUrlInput.value.trim());
     if (!model) return toast('請輸入 model 名稱', 'warn');
     if (!baseUrl) return toast('請輸入 base URL', 'warn');
+    if (baseUrlInput.value.trim() !== baseUrl) baseUrlInput.value = baseUrl; /* 即場修正輸入框 */
     saveAiBtn.disabled = true;
     aiStatus.className = 'status';
     aiStatus.textContent = '儲存緊…';
