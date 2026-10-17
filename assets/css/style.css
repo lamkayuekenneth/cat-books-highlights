@@ -335,6 +335,9 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .page-banner.ok { background: #f0faf0; border: 1px solid #bfe3bf; color: #2d6a2d; }
 .page-banner a { color: inherit; text-decoration: underline; font-weight: 800; }
 
+/* ---------- 版本標籤 ---------- */
+.version-tag { margin: 0 0 12px; font-size: .75rem; color: var(--ink-soft); }
+
 /* ---------- 設定頁：localStorage 狀態表 ---------- */
 .ls-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: 6px; }
 .ls-table th, .ls-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }

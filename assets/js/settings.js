@@ -365,4 +365,5 @@
       });
   }
   refreshSecretState();
+  window.__CB_SETTINGS_LOADED = true; /* 畀 settings.html 嘅載入檢查用 */
 })();
