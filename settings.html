@@ -22,6 +22,20 @@
 
   <main class="container settings-grid">
     <section class="card">
+      <h2 class="section-title">💾 瀏覽器儲存狀態（localStorage）</h2>
+      <p class="hint">以下係<b>呢部裝置＋呢個瀏覽器</b>而家儲存咗嘅設定。呢啲資料<b>唔會跨裝置／跨瀏覽器同步</b>——換咗手機、另一部機或者另一個瀏覽器開網頁，要重新填一次。</p>
+      <table class="ls-table">
+        <tbody>
+          <tr><th>GitHub Token（PAT）</th><td id="ls-pat" class="warn">—</td></tr>
+          <tr><th>GitHub Owner / Repo</th><td id="ls-repo" class="warn">—</td></tr>
+          <tr><th>OpenRouter Key（直連）</th><td id="ls-orkey" class="warn">—</td></tr>
+          <tr><th>AI Model</th><td id="ls-model">—</td></tr>
+          <tr><th>Base URL</th><td id="ls-base">—</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
       <h2 class="section-title">🔌 GitHub 連線</h2>
       <div class="field">
         <label class="field-label" for="owner">Owner（GitHub 用戶名）</label>

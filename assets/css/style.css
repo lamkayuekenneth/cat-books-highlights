@@ -292,6 +292,8 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
   .dz-actions .btn { flex: 1 1 100%; }
   .card-actions .btn { flex: 1 1 auto; }
   body { font-size: 16px; }
+  /* 手機 toast 加大＋避開 Home Indicator（safe-area） */
+  .toast { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); font-size: 1rem; padding: 13px 18px; max-width: 92vw; line-height: 1.45; }
 }
 
 @media (min-width: 721px) {
@@ -318,3 +320,25 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
   color: #2d6a2d;
 }
 .mode-banner a { font-weight: 700; }
+
+/* ---------- 上傳頁醒目狀態橫幅（手機揀完相「冇反應」就係要靠呢個） ---------- */
+.page-banner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin: 0 0 14px;
+  font-size: .95rem;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.page-banner.warn { background: #fff8e6; border: 1px solid #e8d9a8; color: #6b5d1e; }
+.page-banner.error { background: #fdecec; border: 1px solid #e5b0a6; color: #8c2f2f; }
+.page-banner.ok { background: #f0faf0; border: 1px solid #bfe3bf; color: #2d6a2d; }
+.page-banner a { color: inherit; text-decoration: underline; font-weight: 800; }
+
+/* ---------- 設定頁：localStorage 狀態表 ---------- */
+.ls-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: 6px; }
+.ls-table th, .ls-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.ls-table th { width: 44%; font-size: .82rem; color: var(--ink-soft); font-weight: 700; white-space: nowrap; vertical-align: top; }
+.ls-table td { word-break: break-all; }
+.ls-table .ok { color: var(--ok); font-weight: 600; }
+.ls-table .warn { color: var(--accent-ink); font-weight: 600; }

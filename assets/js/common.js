@@ -187,9 +187,21 @@
     el.textContent = msg;
     el.className = 'toast show ' + (type || '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.className = 'toast'; }, 4200);
+    toastTimer = setTimeout(function () { el.className = 'toast'; }, 6000);
   }
   window.toast = toast;
+
+  /* ---------- 全頁錯誤捕捉：任何靜靜地死咗嘅錯誤都要見得到（尤其手機） ---------- */
+  window.addEventListener('error', function (e) {
+    var msg = (e && e.message) ? e.message : '頁面發生錯誤';
+    try { toast('⚠ ' + msg, 'error'); } catch (err) { /* toast 未 ready */ }
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var reason = e && e.reason;
+    var msg = (reason && reason.message) ? reason.message
+      : (reason ? String(reason) : '未知錯誤');
+    try { toast('⚠ ' + msg, 'error'); } catch (err) { /* toast 未 ready */ }
+  });
 
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   window.sleep = sleep;

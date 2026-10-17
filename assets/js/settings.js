@@ -30,8 +30,10 @@
   ownerInput.value = conn.owner;
   repoInput.value = conn.repo;
   patInput.value = CB.getPat();
-  modelInput.value = 'openai/gpt-4o-mini';
-  baseUrlInput.value = 'https://openrouter.ai/api/v1';
+  /* 先用瀏覽器快取（localStorage）做預設，再畀 repo 嘅 config/settings.json 覆蓋 */
+  var aiCache = CB.getAiCache();
+  modelInput.value = aiCache.model;
+  baseUrlInput.value = aiCache.baseUrl;
 
   try {
     CB.freshText('config/settings.json').then(function (text) {
@@ -44,7 +46,39 @@
   function saveConn() {
     CB.setOwnerRepo(ownerInput.value, repoInput.value);
     CB.setPat(patInput.value.trim());
+    refreshLocalState();
   }
+
+  /* ---------- 瀏覽器儲存狀態總覽（localStorage） ---------- */
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function refreshLocalState() {
+    var pat = CB.getPat();
+    var c = CB.getOwnerRepo();
+    var orKey = CB.getOrKey();
+    var ai = CB.getAiCache();
+    function set(id, html, cls) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = html;
+      el.className = cls || '';
+    }
+    set('ls-pat', pat
+      ? '✓ 已設定（尾 4 位：…' + esc(pat.slice(-4)) + '）'
+      : '✗ 未設定（上傳分析＋儲存都需要）', pat ? 'ok' : 'warn');
+    set('ls-repo', (c.owner && c.repo)
+      ? '✓ ' + esc(c.owner) + ' / ' + esc(c.repo)
+      : '✗ 未設定（喺 GitHub Pages 打開會自動偵測）', (c.owner && c.repo) ? 'ok' : 'warn');
+    set('ls-orkey', orKey
+      ? '✓ 已啟用（尾 4 位：…' + esc(orKey.slice(-4)) + '，幾秒出結果）'
+      : '✗ 未設定（用緊 GitHub Actions 後備，約 1–2 分鐘）', orKey ? 'ok' : 'warn');
+    set('ls-model', esc(ai.model || '—'));
+    set('ls-base', esc(ai.baseUrl || '—'));
+  }
+  refreshLocalState();
 
   /* ---------- 測試連線 ---------- */
   testBtn.addEventListener('click', function () {

@@ -53,6 +53,18 @@
   var fileInput = document.getElementById('file-input');
   var cameraInput = document.getElementById('camera-input');
   var queue = document.getElementById('queue');
+  var pageBanner = document.getElementById('page-banner');
+
+  /* ---------- 醒目持久橫幅（手機上傳冇反應主因：淨係 toast 太易睇漏） ---------- */
+  function showBanner(msg, cls) {
+    if (!pageBanner) return;
+    pageBanner.hidden = false;
+    pageBanner.className = 'page-banner ' + (cls || 'warn');
+    pageBanner.innerHTML = msg;
+  }
+  function clearBanner() {
+    if (pageBanner) pageBanner.hidden = true;
+  }
 
   /* ---------- 拖放 + 揀檔 ---------- */
   ['dragenter', 'dragover'].forEach(function (ev) {
@@ -92,8 +104,20 @@
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
-      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('無法讀取圖片')); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('無法讀取圖片（格式唔支援？）')); };
       img.src = url;
+    });
+  }
+
+  /* createImageBitmap：同步 throw 同非同步 reject 都要 fallback 去 <img> 解碼
+     （iOS Safari 解 HEIC 用 <img> 得，createImageBitmap 會 reject） */
+  function makeBitmap(file) {
+    return new Promise(function (resolve, reject) {
+      var p = null;
+      try { p = createImageBitmap(file, { imageOrientation: 'from-image' }); }
+      catch (e) { p = null; }
+      if (p) { p.then(resolve, function () { loadImage(file).then(resolve, reject); }); }
+      else { loadImage(file).then(resolve, reject); }
     });
   }
 
@@ -110,13 +134,7 @@
 
   function compressImage(file) {
     return Promise.resolve().then(function () {
-      var sourcePromise;
-      try {
-        sourcePromise = createImageBitmap(file, { imageOrientation: 'from-image' });
-      } catch (e) {
-        sourcePromise = loadImage(file);
-      }
-      return sourcePromise;
+      return makeBitmap(file);
     }).then(function (source) {
       var isBitmap = !!(source && source.close);
       try {
@@ -433,11 +451,42 @@
     });
   }
 
+  /* 手機相片：iOS 相機可能係 HEIC/HEIF，一啲 Android 揀檔器連 MIME type 都唔填（空字串）——
+     唔可以淨係靠 f.type 過濾，否則揀完相「冇反應」 */
+  function isImageFile(f) {
+    if (f.type && f.type.indexOf('image/') === 0) return true;
+    if (!f.type) return true; /* 空 MIME 照試，解碼失敗先至喺卡片度報錯 */
+    return /\.(heic|heif|jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name || '');
+  }
+
   function handleFiles(fileList) {
-    var files = Array.prototype.filter.call(fileList, function (f) { return f.type.indexOf('image/') === 0; });
-    if (!files.length) return toast('請揀相片檔案', 'warn');
-    if (!CB.getPat()) return toast('未設定 GitHub Token：請先去「設定」頁填入', 'error');
-    try { CB.requireRepo(); } catch (e) { return toast(e.message, 'error'); }
+    var files = Array.prototype.filter.call(fileList, isImageFile);
+    if (!files.length) {
+      showBanner('⚠ 請揀相片檔案（HEIC／JPEG／PNG 都支援）', 'warn');
+      return toast('請揀相片檔案', 'warn');
+    }
+    var pat = CB.getPat();
+    var orKey = CB.getOrKey();
+    var repoOk = true;
+    try { CB.requireRepo(); } catch (e) { repoOk = false; }
+    if (!pat && !orKey) {
+      /* 最常見「揀完相冇反應」：手機 localStorage 係空（唔會同電腦同步） */
+      showBanner(
+        '🚫 未設定 GitHub Token：AI 分析同儲存都需要佢。<br>' +
+        '請去 <a href="settings.html">⚙️ 設定</a> 貼你嘅 GitHub Token，或啟用「🚀 瀏覽器直連」貼 OpenRouter Key（幾秒出結果）。',
+        'error');
+      return toast('未設定 GitHub Token：去設定頁填入先', 'error');
+    }
+    if (!pat && orKey) {
+      /* 直連模式：AI 分析唔使 PAT 照行，但儲存到 books.json 需要 PAT */
+      showBanner(
+        '⚠ 未有 GitHub Token：AI 分析會用「🚀 瀏覽器直連」照行，但<b>儲存到 books.json 需要 Token</b>——' +
+        '請去 <a href="settings.html">⚙️ 設定</a> 補填，分析完先至撳「儲存」。', 'warn');
+    } else if (!repoOk) {
+      showBanner('⚠ 未有 GitHub Owner / Repo：請去 <a href="settings.html">⚙️ 設定</a> 填返（GitHub Pages 打開會自動偵測）。', 'warn');
+    } else {
+      clearBanner();
+    }
 
     var chain = Promise.resolve();
     files.forEach(function (file) {
