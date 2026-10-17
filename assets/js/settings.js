@@ -15,6 +15,8 @@
   var baseUrlInput = document.getElementById('base-url');
   var saveAiBtn = document.getElementById('save-ai');
   var aiStatus = document.getElementById('ai-status');
+  var testAiBtn = document.getElementById('test-ai');
+  var aiTestStatus = document.getElementById('ai-test-status');
 
   var apiKeyInput = document.getElementById('api-key');
   var saveKeyBtn = document.getElementById('save-key');
@@ -121,6 +123,59 @@
         toast('儲存失敗：' + err.message, 'error');
       })
       .then(function () { saveAiBtn.disabled = false; });
+  });
+
+  /* ---------- 測試 AI Model（用輸入緊嘅 model + base URL + Key 實際 call 一次） ---------- */
+  testAiBtn.addEventListener('click', function () {
+    saveConn();
+    var model = modelInput.value.trim();
+    var baseUrl = baseUrlInput.value.trim();
+    if (!model) return toast('請輸入 model 名稱', 'warn');
+    if (!baseUrl) return toast('請輸入 base URL', 'warn');
+    /* Key 優先取直連（localStorage），未啟用就試後備輸入框 */
+    var key = CB.getOrKey() || apiKeyInput.value.trim();
+    if (!key) {
+      aiTestStatus.className = 'status error';
+      aiTestStatus.textContent = '✗ 未有 Key 可測試：請先喺「🚀 瀏覽器直連」啟用（貼 OpenRouter Key），或者喺「🔑 API Key」輸入框填一個';
+      return toast('未有 Key 可測試', 'warn');
+    }
+    testAiBtn.disabled = true;
+    aiTestStatus.className = 'status';
+    aiTestStatus.textContent = '測試緊…（' + model + '）';
+    var t0 = Date.now();
+    fetch(baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': location.origin + location.pathname,
+        'X-Title': 'CatBookmark'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: '只回覆一個字：好' }],
+        temperature: 0,
+        max_tokens: 10
+      })
+    }).then(function (res) {
+      var secs = ((Date.now() - t0) / 1000).toFixed(1);
+      return res.json().catch(function () { return null; }).then(function (j) {
+        if (!res.ok) {
+          var msg = (j && j.error) ? (j.error.message || JSON.stringify(j.error)) : ('HTTP ' + res.status);
+          throw new Error(msg + '（' + secs + ' 秒）');
+        }
+        var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        aiTestStatus.className = 'status ok';
+        aiTestStatus.textContent = '✓ 回應正常（' + model + '，' + secs + ' 秒）：' +
+          (content ? String(content).trim().replace(/\s+/g, ' ').slice(0, 60) : '（無內容）');
+        toast('✓ AI Model 測試通過（' + secs + ' 秒）', 'ok');
+      });
+    }).catch(function (err) {
+      aiTestStatus.className = 'status error';
+      aiTestStatus.textContent = '✗ 測試失敗：' + (err.message || err) +
+        '。檢查 model ID、base URL 或 Key（OpenRouter 對某啲 model 有 ToS 限制）';
+      toast('✗ AI Model 測試失敗', 'error');
+    }).then(function () { testAiBtn.disabled = false; });
   });
 
   /* ---------- 瀏覽器直連 Key（localStorage） ---------- */

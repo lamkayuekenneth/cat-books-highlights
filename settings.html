@@ -80,11 +80,14 @@
         <input id="base-url" type="text" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
         <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。</p>
       </div>
-      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>，同時記低喺你瀏覽器（直連模式用）。</p>
+      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>，同時記低喺你瀏覽器（直連模式用）。<br>
+        測試用嘅 Key 會優先取「🚀 瀏覽器直連」嗰個；未啟用就試「🔑 API Key」輸入框。測試只驗證連線同延遲，唔代表書頁 OCR 一定得（某啲 model 對書頁圖有 ToS 限制）。</p>
       <div class="card-actions">
         <button class="btn btn-primary" id="save-ai" type="button">儲存 AI 設定</button>
+        <button class="btn btn-ghost" id="test-ai" type="button">測試 Model</button>
       </div>
       <p class="status" id="ai-status"></p>
+      <p class="status" id="ai-test-status"></p>
     </section>
 
     <section class="card">
