@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 書目庫：檢視／編輯已儲存嘅書名同標籤">
   <title>CatBookmark 貓書籤 · 書目庫</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261028">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261029">
 </head>
 <body class="page-library">
   <header class="topbar">
@@ -32,15 +32,15 @@
       </div>
 
       <div class="filter-row">
-        <div class="field">
-          <label class="field-label" for="filter-title">書名（揀或手動輸入）</label>
-          <input id="filter-title" type="text" list="title-list" placeholder="揀或輸入書名…" autocomplete="off">
-          <datalist id="title-list"></datalist>
+        <div class="field field-rel">
+          <label class="field-label" for="filter-title">書名（撳落去直接打，即時篩選）</label>
+          <input id="filter-title" type="text" placeholder="輸入書名…（自動篩選）" autocomplete="off">
+          <div class="suggest" id="suggest-title" hidden></div>
         </div>
-        <div class="field">
-          <label class="field-label" for="filter-tag">標籤（揀或手動輸入）</label>
-          <input id="filter-tag" type="text" list="tag-list" placeholder="揀或輸入標籤…" autocomplete="off">
-          <datalist id="tag-list"></datalist>
+        <div class="field field-rel">
+          <label class="field-label" for="filter-tag">標籤（撳落去直接打，即時篩選）</label>
+          <input id="filter-tag" type="text" placeholder="輸入標籤…（自動篩選）" autocomplete="off">
+          <div class="suggest" id="suggest-tag" hidden></div>
         </div>
         <button class="btn btn-ghost" id="filter-clear" type="button">清除篩選</button>
       </div>
@@ -62,7 +62,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261028"></script>
-  <script src="assets/js/library.js?v=20261028"></script>
+  <script src="assets/js/common.js?v=20261029"></script>
+  <script src="assets/js/library.js?v=20261029"></script>
 </body>
 </html>

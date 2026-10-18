@@ -7,19 +7,32 @@
   'use strict';
 
   var allRows = [];   /* [{book_title, tag, page}] */
+  var titleOptions = [];  /* 現存書名（suggest 用） */
+  var tagOptions = [];    /* 現存標籤（suggest 用） */
 
   var titleFilter = document.getElementById('filter-title');
   var tagFilter = document.getElementById('filter-tag');
-  var titleList = document.getElementById('title-list');
-  var tagList = document.getElementById('tag-list');
+  var suggestTitleEl = document.getElementById('suggest-title');
+  var suggestTagEl = document.getElementById('suggest-tag');
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('filter-count');
   var clearBtn = document.getElementById('filter-clear');
   var loadBtn = document.getElementById('reload');
   var exportBtn = document.getElementById('export-csv');
 
-  titleFilter.addEventListener('input', render);
-  tagFilter.addEventListener('input', render);
+  /* 撳落去／打字：即時篩選表格＋彈 suggest（可以直接打，唔一定要揀） */
+  titleFilter.addEventListener('focus', function () { showSuggestions('title', titleFilter.value); });
+  tagFilter.addEventListener('focus', function () { showSuggestions('tag', tagFilter.value); });
+  titleFilter.addEventListener('input', function () {
+    render();
+    showSuggestions('title', titleFilter.value);
+  });
+  tagFilter.addEventListener('input', function () {
+    render();
+    showSuggestions('tag', tagFilter.value);
+  });
+  titleFilter.addEventListener('blur', function () { setTimeout(function () { suggestTitleEl.hidden = true; }, 150); });
+  tagFilter.addEventListener('blur', function () { setTimeout(function () { suggestTagEl.hidden = true; }, 150); });
   clearBtn.addEventListener('click', function () {
     titleFilter.value = '';
     tagFilter.value = '';
@@ -27,6 +40,46 @@
   });
   if (loadBtn) loadBtn.addEventListener('click', load);
   if (exportBtn) exportBtn.addEventListener('click', exportCsv);
+
+  /* suggest：揀現存書名／標籤，或者一路打字即時篩選 */
+  function showSuggestions(kind, q) {
+    var box = kind === 'title' ? suggestTitleEl : suggestTagEl;
+    var options = kind === 'title' ? titleOptions : tagOptions;
+    if (!q) { box.innerHTML = ''; box.hidden = true; return; }
+    var ql = q.toLowerCase();
+    var hits = options.filter(function (v) {
+      return String(v).toLowerCase().indexOf(ql) !== -1;
+    }).slice(0, 8);
+    box.innerHTML = '';
+    if (!hits.length) { box.hidden = true; return; }
+    hits.forEach(function (v) {
+      var i = String(v).toLowerCase().indexOf(ql);
+      var html = '';
+      if (i >= 0) {
+        html = esc(v.slice(0, i)) + '<b>' + esc(v.slice(i, i + q.length)) + '</b>' + esc(v.slice(i + q.length));
+      } else {
+        html = esc(v);
+      }
+      var it = document.createElement('div');
+      it.className = 'suggest-item';
+      it.innerHTML = '<span class="suggest-title">' + html + '</span>';
+      it.addEventListener('mousedown', function (e) { e.preventDefault(); applySuggestion(kind, v); });
+      it.addEventListener('touchstart', function (e) { e.preventDefault(); applySuggestion(kind, v); }, { passive: false });
+      box.appendChild(it);
+    });
+    box.hidden = false;
+  }
+
+  function applySuggestion(kind, v) {
+    if (kind === 'title') {
+      titleFilter.value = v;
+      suggestTitleEl.hidden = true;
+    } else {
+      tagFilter.value = v;
+      suggestTagEl.hidden = true;
+    }
+    render();
+  }
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -127,16 +180,14 @@
   function render() {
     var rows = filtered(sorted());
 
-    /* 篩選 autocomplete */
+    /* suggest 選項（現存書名／標籤） */
     var titleSet = {}, tagSet = {};
     allRows.forEach(function (r) {
       titleSet[String(r.book_title || '').trim()] = true;
       tagSet[String(r.tag || '').trim()] = true;
     });
-    var allTitles = Object.keys(titleSet).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, 'zh-Hant'); });
-    var allTags = Object.keys(tagSet).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, 'zh-Hant'); });
-    titleList.innerHTML = allTitles.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('');
-    tagList.innerHTML = allTags.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('');
+    titleOptions = Object.keys(titleSet).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, 'zh-Hant'); });
+    tagOptions = Object.keys(tagSet).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, 'zh-Hant'); });
 
     var bookCount = Object.keys(titleSet).filter(Boolean).length;
     countEl.textContent = '顯示 ' + rows.length + ' / ' + allRows.length + ' 條記錄 · 共 ' + bookCount + ' 本書';
