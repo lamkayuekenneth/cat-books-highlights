@@ -345,10 +345,14 @@
       }), newTitle, newAuthor);
       if (newTitle === oldTitle) { saveAll(metaNext); return; }
       /* 書名改咗 → 同步將書目庫（books.json）入面掛喺舊書名嘅 tag 全部改做新書名 */
+      var warnMsg = null;
       CB.freshText('data/books.json').then(function (text) {
         var rows;
-        try { rows = JSON.parse(text); } catch (e) { rows = []; }
-        if (!Array.isArray(rows)) rows = [];
+        try { rows = JSON.parse(text); } catch (e) { rows = null; }
+        if (!Array.isArray(rows)) {
+          warnMsg = '讀唔到書目庫 books.json，未能同步書名';
+          return;
+        }
         var changed = false;
         rows.forEach(function (r) {
           if (String(r.book_title || '').trim() === oldTitle) {
@@ -356,13 +360,18 @@
             changed = true;
           }
         });
-        if (!changed) return;
+        if (!changed) {
+          warnMsg = '書目庫冇「' + oldTitle + '」嘅 tag（無嘢同步）';
+          return;
+        }
         return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n',
           '書本庫改名同步 tag 書名：' + oldTitle + ' → ' + newTitle);
       }).catch(function (err) {
-        toast('同步 tag 書名失敗（照樣儲存書本庫）：' + err.message, 'warn');
+        warnMsg = '同步 tag 書名失敗：' + err.message;
       }).then(function () {
-        saveAll(metaNext);
+        return saveAll(metaNext);
+      }).then(function () {
+        if (warnMsg) toast(warnMsg, 'warn');
       });
     });
   }
