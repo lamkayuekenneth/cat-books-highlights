@@ -340,15 +340,19 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .field-error { color: var(--danger, #dc2626); font-size: .85rem; margin-top: 5px; font-weight: 600; }
 .input-error { border-color: var(--danger, #dc2626) !important; box-shadow: 0 0 0 2px rgba(220,38,38,.15); }
 
-/* ---------- 「未喺書本庫」兩選項（上傳卡片內） ---------- */
+/* ---------- 書名框下面常駐三個掣（揀書／揀相／拍照） ---------- */
 .lib-options {
-  margin: 0 18px 12px;
-  padding: 12px 14px;
+  margin: 0 18px 4px;
+  padding: 4px 0 0;
+}
+.lib-options-text {
+  margin: 0 0 8px;
+  font-size: .84rem;
+  padding: 8px 10px;
   border: 1.5px dashed var(--accent);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(192, 127, 42, .06);
 }
-.lib-options-text { margin: 0 0 10px; font-size: .9rem; }
 .lib-options-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- modal（書本庫新增／編輯） ---------- */
