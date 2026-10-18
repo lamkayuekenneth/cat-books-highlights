@@ -204,7 +204,7 @@
     var tr = document.createElement('tr');
     tr.className = 'book-row';
     tr.innerHTML =
-      '<td class="cell-title">' + hl(row.book_title || '', titleFilter.value.trim()) + '</td>' +
+      '<td class="cell-title clickable" data-role="title-cell">' + hl(row.book_title || '', titleFilter.value.trim()) + '</td>' +
       '<td class="cell-tag">' + hl(row.tag || '', tagFilter.value.trim()) + '</td>' +
       '<td class="cell-page">' + esc(row.page || '—') + '</td>' +
       '<td class="cell-actions">' +
@@ -212,6 +212,19 @@
       '  <button class="btn btn-small btn-danger-ghost" data-role="del" type="button">刪除</button>' +
       '</td>';
 
+    /* 撳書名格 → 即時 filter（再撳一次就取消 filter） */
+    tr.querySelector('[data-role="title-cell"]').addEventListener('click', function () {
+      var t = String(row.book_title || '').trim();
+      if (!t) return;
+      if (titleFilter.value.trim() === t) {
+        titleFilter.value = '';
+        toast('已取消書名篩選', 'ok');
+      } else {
+        titleFilter.value = t;
+        toast('已篩選書名：「' + t + '」', 'ok');
+      }
+      render();
+    });
     tr.querySelector('[data-role="edit"]').addEventListener('click', function () {
       editRow(tr, row);
     });

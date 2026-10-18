@@ -239,6 +239,8 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .book-table thead th { background: rgba(0, 0, 0, .03); font-size: .82rem; color: var(--ink-soft); white-space: nowrap; }
 .book-table tbody tr:last-child td { border-bottom: 0; }
 .book-table .cell-title { font-weight: 700; min-width: 130px; }
+.book-table .cell-title.clickable { cursor: pointer; text-decoration: underline dotted rgba(38, 120, 128, .45); }
+.book-table .cell-title.clickable:hover, .book-table .cell-title.clickable:active { color: var(--teal); }
 .book-table .cell-author { color: var(--ink-soft); min-width: 90px; word-break: break-word; }
 .book-table .cell-tag { word-break: break-word; }
 .book-table .cell-page { white-space: nowrap; color: var(--ink-soft); }
@@ -354,6 +356,12 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
   background: rgba(192, 127, 42, .06);
 }
 .lib-options-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lib-options-actions .btn {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(70, 55, 30, .08);
+}
+.lib-options-actions .btn:active { background: #f0e8d6; }
 
 /* ---------- modal（書本庫新增／編輯） ---------- */
 .modal-overlay {
