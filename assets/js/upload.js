@@ -364,7 +364,9 @@
     this.optManual.addEventListener('click', function () {
       card.authorWrap.hidden = false;
       card.libOptions.hidden = true;
-      card.titleInput.focus();
+      /* 將書名框滾到畫面中間先 focus——直接 focus 會滾到最頂、藏喺 sticky 導覽欄後面 */
+      card.titleInput.scrollIntoView({ block: 'center' });
+      try { card.titleInput.focus({ preventScroll: true }); } catch (e) { card.titleInput.focus(); }
       toast('填返書名（必填）＋作者（可選），再撳儲存——會自動加入「書本庫」', 'ok');
     });
     this.optPick.addEventListener('click', function () {
@@ -601,6 +603,8 @@
     var inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = 'image/*';
+    /* capture=environment：手機直接開相機（相機介面入面都可以轉去揀相）；桌面照舊彈檔案揀相 */
+    inp.setAttribute('capture', 'environment');
     inp.addEventListener('change', function () {
       var file = inp.files && inp.files[0];
       if (!file) return;

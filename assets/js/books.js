@@ -295,10 +295,32 @@
       editRow(tr, b);
     });
     tr.querySelector('[data-role="del"]').addEventListener('click', function () {
-      if (!window.confirm('刪除「' + b.book_title + '」？\n（注意：書目庫入面已儲存嘅 tag 唔會刪走，但新 tag 唔可以再掛喺呢本書。）')) return;
-      saveAll(allBooks.filter(function (x) {
-        return String(x.book_title || '').trim() !== String(b.book_title || '').trim();
-      }));
+      var delTitle = String(b.book_title || '').trim();
+      if (!delTitle) return;
+      if (!window.confirm('刪除「' + delTitle + '」？\n（書目庫入面已儲存嘅 tag 會保留，但書名會變成空白——你日後可以喺「書目庫」編輯 tag 加返書名。）')) return;
+      var metaNext = allBooks.filter(function (x) {
+        return String(x.book_title || '').trim() !== delTitle;
+      });
+      /* 將掛喺呢本書名下嘅 tag 書名清空（保留 page＋tag），等用戶日後補返書名 */
+      CB.freshText('data/books.json').then(function (text) {
+        var rows;
+        try { rows = JSON.parse(text); } catch (e) { rows = []; }
+        if (!Array.isArray(rows)) rows = [];
+        var changed = false;
+        rows.forEach(function (r) {
+          if (String(r.book_title || '').trim() === delTitle) {
+            r.book_title = '';
+            changed = true;
+          }
+        });
+        if (!changed) return;
+        return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n',
+          '刪書後清空相關 tag 書名：' + delTitle);
+      }).catch(function (err) {
+        toast('清空 tag 書名失敗（照樣刪書）：' + err.message, 'warn');
+      }).then(function () {
+        saveAll(metaNext);
+      });
     });
     return tr;
   }
