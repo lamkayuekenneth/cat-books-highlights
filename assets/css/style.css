@@ -409,7 +409,6 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
   padding: 9px 12px;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
   gap: 10px;
   align-items: center;
   border-bottom: 1px solid rgba(230, 220, 198, .5);
@@ -417,7 +416,14 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .suggest-item:last-child { border-bottom: 0; }
 .suggest-item:hover, .suggest-item:active { background: #f0e8d6; }
 .suggest-item b { color: var(--teal); }
-.suggest-author { color: var(--ink-soft); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+.suggest-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-author { color: var(--ink-soft); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; flex-shrink: 0; }
 
 /* ---------- 從書本庫揀：compact 表格 ---------- */
 .pick-modal .modal-title { font-size: 1rem; }

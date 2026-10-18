@@ -486,7 +486,7 @@
       var ql = q.toLowerCase();
       var hits = meta.filter(function (b) {
         return String(b.book_title || '').toLowerCase().indexOf(ql) !== -1;
-      }).slice(0, 8);
+      }).slice(0, 6);
       if (!hits.length) { sEl.hidden = true; return; }
       sEl.innerHTML = '';
       hits.forEach(function (b) {
@@ -501,7 +501,8 @@
         }
         var it = document.createElement('div');
         it.className = 'suggest-item';
-        it.innerHTML = html + (author ? '<span class="suggest-author">' + esc(author) + '</span>' : '');
+        it.innerHTML = '<span class="suggest-title">' + html + '</span>' +
+          (author ? '<span class="suggest-author">' + esc(author) + '</span>' : '');
         it.addEventListener('mousedown', function (e) { e.preventDefault(); card.applyLibraryBook(b); });
         it.addEventListener('touchstart', function (e) { e.preventDefault(); card.applyLibraryBook(b); }, { passive: false });
         sEl.appendChild(it);
