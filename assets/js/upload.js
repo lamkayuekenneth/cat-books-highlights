@@ -46,6 +46,25 @@
     '書名或作者認唔到就寫空字串。唔好輸出任何其他文字、解釋或者 markdown 標記。';
   var BOOKS_USER_PROMPT = '請睇吓呢張相：認出書名同作者（認唔到就留空）。';
 
+  /* ---------- 書本庫 meta 快取（suggest／揀書 modal 用） ---------- */
+  var metaCache = null;
+  function loadMeta(force) {
+    if (metaCache && !force) return Promise.resolve(metaCache);
+    return CB.freshText('data/books_meta.json').then(function (text) {
+      var arr = [];
+      try { arr = JSON.parse(text); } catch (e) { arr = []; }
+      if (!Array.isArray(arr)) arr = [];
+      metaCache = arr;
+      return arr;
+    }).catch(function () { return []; });
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   /* ---------- 直連模式提示 banner：未啟用直連就話畀用戶知 ---------- */
   (function showModeBanner() {
     var banner = document.getElementById('mode-banner');
@@ -280,9 +299,10 @@
       '  <div class="card-status" data-role="status">準備中…</div>' +
       '</div>' +
       '<div class="card-body">' +
-      '  <div class="field">' +
+      '  <div class="field field-rel">' +
       '    <span class="field-label">書名（頁眉/頁腳，可編輯）</span>' +
       '    <input data-role="title" type="text" placeholder="書名…" autocomplete="off">' +
+      '    <div class="suggest" data-role="suggest" hidden></div>' +
       '    <p class="field-error" data-role="title-error" hidden>⚠ 書名係必填——AI 喺頁面搵唔到書名（可能冇印），你可以手動打返書名，先至可以儲存。</p>' +
       '  </div>' +
       '  <div class="field" data-role="author-wrap" hidden>' +
@@ -303,6 +323,7 @@
       '  <p class="lib-options-text" data-role="lib-text"></p>' +
       '  <div class="lib-options-actions">' +
       '    <button class="btn btn-small btn-primary" data-role="opt-manual" type="button">✍️ 手動輸入書名＋作者</button>' +
+      '    <button class="btn btn-small" data-role="opt-pick" type="button">🗂️ 從書本庫中揀</button>' +
       '    <button class="btn btn-small" data-role="opt-photo" type="button">📷 影相／揀相認書名＋作者</button>' +
       '  </div>' +
       '</div>' +
@@ -326,19 +347,28 @@
     this.libText = this.el.querySelector('[data-role="lib-text"]');
     this.optManual = this.el.querySelector('[data-role="opt-manual"]');
     this.optPhoto = this.el.querySelector('[data-role="opt-photo"]');
+    this.optPick = this.el.querySelector('[data-role="opt-pick"]');
+    this.suggestEl = this.el.querySelector('[data-role="suggest"]');
 
-    /* 書名一打字就收埋警告 */
+    /* 書名一打字就收埋警告＋一路打一路 suggest 書本庫書名 */
     this.titleInput.addEventListener('input', function () {
       card.titleErrorEl.hidden = true;
       card.titleInput.classList.remove('input-error');
+      card.updateSuggest();
+    });
+    this.titleInput.addEventListener('blur', function () {
+      setTimeout(function () { if (card.suggestEl) card.suggestEl.hidden = true; }, 150);
     });
 
-    /* 「未喺書本庫」兩個選項 */
+    /* 「未喺書本庫」三個選項 */
     this.optManual.addEventListener('click', function () {
       card.authorWrap.hidden = false;
       card.libOptions.hidden = true;
       card.titleInput.focus();
       toast('填返書名（必填）＋作者（可選），再撳儲存——會自動加入「書本庫」', 'ok');
+    });
+    this.optPick.addEventListener('click', function () {
+      openPickModal(card);
     });
     this.optPhoto.addEventListener('click', function () {
       card.pickCoverPhoto();
@@ -426,32 +456,139 @@
     this._renderChips(Array.isArray(result.tags) ? result.tags : []);
     this.saveBtn.disabled = false;
     this.status('AI 分析完成，可以編輯', 'ok');
-    /* 檢查書本庫：tag 一定要掛喺書本庫內嘅書；未喺書本庫就彈兩選項 */
+    /* 檢查書本庫：tag 一定要掛喺書本庫內嘅書；未喺書本庫就彈三選項 */
     var title = this.titleInput.value.trim();
-    CB.freshText('data/books_meta.json').then(function (text) {
-      var meta = [];
-      try { meta = JSON.parse(text); } catch (e) { meta = []; }
-      if (!Array.isArray(meta)) meta = [];
+    loadMeta(true).then(function (meta) {
       var inLib = meta.some(function (b) {
         return String(b.book_title || '').trim() === title;
       });
       card._inLibrary = inLib;
       if (!inLib) card.showLibOptions(title);
-    }).catch(function () {
-      card._inLibrary = false;
-      card.showLibOptions(title);
     });
   };
 
-  /* 「未喺書本庫」：tag 一定要掛喺書本庫內嘅書 → 兩個選項 */
+  /* 「未喺書本庫」：tag 一定要掛喺書本庫內嘅書 → 三個選項 */
   Card.prototype.showLibOptions = function (title) {
     this.libText.innerHTML = title
-      ? '⚠ 「<b>' + String(title).replace(/[&<>"']/g, function (c) {
-          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        }) + '</b>」未喺「書本庫」入面。新 tag 一定要掛喺書本庫內嘅書——揀下面其中一個方式：'
+      ? '⚠ 「<b>' + esc(title) + '</b>」未喺「書本庫」入面。新 tag 一定要掛喺書本庫內嘅書——揀下面其中一個方式：'
       : '⚠ AI 冇喺相中搵到書名。新 tag 一定要掛喺書本庫內嘅書——揀下面其中一個方式：';
     this.libOptions.hidden = false;
   };
+
+  /* 藍圈：書名一路打一路 suggest 書本庫書名（唔一定要揀） */
+  Card.prototype.updateSuggest = function () {
+    var card = this;
+    var q = this.titleInput.value.trim();
+    var sEl = this.suggestEl;
+    if (!q) { if (sEl) sEl.hidden = true; return; }
+    loadMeta().then(function (meta) {
+      if (!sEl || sEl.hidden === undefined) return;
+      var ql = q.toLowerCase();
+      var hits = meta.filter(function (b) {
+        return String(b.book_title || '').toLowerCase().indexOf(ql) !== -1;
+      }).slice(0, 8);
+      if (!hits.length) { sEl.hidden = true; return; }
+      sEl.innerHTML = '';
+      hits.forEach(function (b) {
+        var title = String(b.book_title || '');
+        var author = String(b.author || '').trim();
+        var i = title.toLowerCase().indexOf(ql);
+        var html = '';
+        if (i >= 0) {
+          html = esc(title.slice(0, i)) + '<b>' + esc(title.slice(i, i + q.length)) + '</b>' + esc(title.slice(i + q.length));
+        } else {
+          html = esc(title);
+        }
+        var it = document.createElement('div');
+        it.className = 'suggest-item';
+        it.innerHTML = html + (author ? '<span class="suggest-author">' + esc(author) + '</span>' : '');
+        it.addEventListener('mousedown', function (e) { e.preventDefault(); card.applyLibraryBook(b); });
+        it.addEventListener('touchstart', function (e) { e.preventDefault(); card.applyLibraryBook(b); }, { passive: false });
+        sEl.appendChild(it);
+      });
+      sEl.hidden = false;
+    });
+  };
+
+  /* 揀中書本庫嘅書 → 填入卡片 */
+  Card.prototype.applyLibraryBook = function (b) {
+    this.titleInput.value = String(b.book_title || '').trim();
+    this.titleErrorEl.hidden = true;
+    this.titleInput.classList.remove('input-error');
+    if (b.author) {
+      this.authorInput.value = String(b.author || '').trim();
+      this.authorWrap.hidden = false;
+    }
+    this.libOptions.hidden = true;
+    if (this.suggestEl) this.suggestEl.hidden = true;
+  };
+
+  /* ---------- 「🗂️ 從書本庫中揀」modal：compact 表格＋filter ---------- */
+  var pickModal = document.getElementById('pick-modal');
+  var pickFilter = document.getElementById('pick-filter');
+  var pickList = document.getElementById('pick-list');
+  var pickCount = document.getElementById('pick-count');
+  var pickCancel = document.getElementById('pick-cancel');
+  var activePickCard = null;
+
+  function renderPick() {
+    var q = pickFilter.value.trim().toLowerCase();
+    loadMeta().then(function (meta) {
+      var rows = meta.filter(function (b) {
+        if (!q) return true;
+        return String(b.book_title || '').toLowerCase().indexOf(q) !== -1 ||
+          String(b.author || '').toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 60);
+      pickList.innerHTML = '';
+      if (!rows.length) {
+        pickList.innerHTML = '<tr><td colspan="2" class="empty">冇符合嘅書（或者書本庫仲未有書）。可以撳「取消」返去手動／影相。</td></tr>';
+      }
+      rows.forEach(function (b) {
+        var tr = document.createElement('tr');
+        tr.className = 'pick-row';
+        var title = String(b.book_title || '');
+        var author = String(b.author || '').trim();
+        var html = q ? '<b>' + esc(title) + '</b>' : esc(title);
+        tr.innerHTML = '<td>' + html + '</td><td class="pick-author">' + esc(author || '—') + '</td>';
+        tr.addEventListener('click', function () {
+          if (activePickCard) activePickCard.applyLibraryBook(b);
+          closePickModal();
+          toast('已揀：「' + title + '」', 'ok');
+        });
+        pickList.appendChild(tr);
+      });
+      pickCount.textContent = '顯示 ' + rows.length + ' / ' + meta.length + ' 本書';
+    });
+  }
+
+  function openPickModal(card) {
+    activePickCard = card;
+    pickFilter.value = '';
+    pickModal.hidden = false;
+    renderPick();
+    pickFilter.focus();
+  }
+  function closePickModal() {
+    pickModal.hidden = true;
+    activePickCard = null;
+  }
+  if (pickFilter) pickFilter.addEventListener('input', renderPick);
+  if (pickCancel) pickCancel.addEventListener('click', closePickModal);
+
+  /* ---------- 儲存時確認 modal：書本庫冇呢本書 → 問用戶要唔要加入 ---------- */
+  var confirmModal = document.getElementById('confirm-modal');
+  var confirmText = document.getElementById('confirm-text');
+  var confirmOk = document.getElementById('confirm-ok');
+  var confirmCancel = document.getElementById('confirm-cancel');
+  function confirmAddBook(title) {
+    return new Promise(function (resolve) {
+      confirmText.innerHTML = '「<b>' + esc(title) + '</b>」未喺「書本庫」入面。<br>' +
+        '要唔要將佢加入書本庫（作者可以之後喺「書本庫」頁補），再儲存呢張 tag？';
+      confirmModal.hidden = false;
+      confirmOk.onclick = function () { confirmModal.hidden = true; resolve(true); };
+      confirmCancel.onclick = function () { confirmModal.hidden = true; resolve(false); };
+    });
+  }
 
   /* 選項 2：影相／揀相 → AI（直連）認書名＋作者 → 填入卡片 */
   Card.prototype.pickCoverPhoto = function () {
@@ -512,25 +649,29 @@
 
     card.status('儲存緊…');
     card.saveBtn.disabled = true;
-    /* 1) 先確保本書喺「書本庫」（新 tag 一定要掛喺書本庫內嘅書）：
-         書名一樣 → 更新作者（有作者先至更新）；唔一樣 → 加新行 */
-    CB.freshText('data/books_meta.json').then(function (text) {
-      var meta = [];
-      try { meta = JSON.parse(text); } catch (e) { meta = []; }
-      if (!Array.isArray(meta)) meta = [];
+    /* 1) 檢查書本庫：書未喺書本庫 → 彈確認 popup（要唔要加入先儲存） */
+    loadMeta(true).then(function (meta) {
       var idx = -1;
       meta.forEach(function (b, i) {
         if (String(b.book_title || '').trim() === title) idx = i;
       });
       if (idx >= 0) {
         if (author) meta[idx].author = author;
-      } else {
-        meta.push({ book_title: title, author: author });
+        return meta;
       }
+      return confirmAddBook(title).then(function (ok) {
+        if (!ok) return null;
+        meta.push({ book_title: title, author: author });
+        return meta;
+      });
+    }).then(function (meta) {
+      if (!meta) throw { cancelled: true };
+      /* 2) 寫入書本庫（upsert） */
       return CB.writeFile('data/books_meta.json',
-        JSON.stringify(meta, null, 2) + '\n', '書本庫新增／更新：' + title);
+        JSON.stringify(meta, null, 2) + '\n', '書本庫新增／更新：' + title)
+        .then(function () { metaCache = null; return true; });
     }).then(function () {
-      /* 2) 然後先至寫 tag 入 books.json */
+      /* 3) 然後先至寫 tag 入 books.json */
       return CB.freshText('data/books.json').then(function (text) {
         var rows;
         try { rows = JSON.parse(text); } catch (e) { rows = []; }
@@ -563,8 +704,13 @@
       toast('已儲存 ✓', 'ok');
     }).catch(function (err) {
       card.saveBtn.disabled = false;
-      card.status('儲存失敗：' + err.message, 'error');
-      toast('儲存失敗：' + err.message, 'error');
+      if (err && err.cancelled) {
+        card.status('未儲存——書本庫冇呢本書，已取消', 'warn');
+        toast('已取消儲存（書本庫冇呢本書）', 'warn');
+      } else {
+        card.status('儲存失敗：' + err.message, 'error');
+        toast('儲存失敗：' + err.message, 'error');
+      }
     });
   };
 

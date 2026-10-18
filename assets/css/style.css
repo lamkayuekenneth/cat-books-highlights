@@ -389,6 +389,51 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
 .modal-status.error { color: var(--danger); }
 .modal-status.warn { color: var(--accent-ink); }
 
+/* ---------- 書名 suggest 下拉（上傳卡片） ---------- */
+.field-rel { position: relative; }
+.suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(70, 55, 30, .18);
+  max-height: 210px;
+  overflow-y: auto;
+  font-size: .85rem;
+}
+.suggest-item {
+  padding: 9px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid rgba(230, 220, 198, .5);
+}
+.suggest-item:last-child { border-bottom: 0; }
+.suggest-item:hover, .suggest-item:active { background: #f0e8d6; }
+.suggest-item b { color: var(--teal); }
+.suggest-author { color: var(--ink-soft); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+
+/* ---------- 從書本庫揀：compact 表格 ---------- */
+.pick-modal .modal-title { font-size: 1rem; }
+.pick-modal input { font-size: .9rem; }
+.pick-scroll { max-height: 52vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+.pick-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.pick-table th, .pick-table td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+.pick-table thead th { background: rgba(0, 0, 0, .03); font-size: .75rem; color: var(--ink-soft); position: sticky; top: 0; }
+.pick-table tbody tr:last-child td { border-bottom: 0; }
+.pick-row { cursor: pointer; }
+.pick-row:hover, .pick-row:active { background: #f0e8d6; }
+.pick-row b { color: var(--teal); }
+.pick-author { color: var(--ink-soft); word-break: break-word; }
+.pick-count { margin: 8px 0 0; font-size: .78rem; color: var(--ink-soft); }
+.pick-table .empty { text-align: center; color: var(--ink-soft); padding: 14px 8px; }
+
 /* ---------- 版本標籤 ---------- */
 .version-tag { margin: 0 0 12px; font-size: .75rem; color: var(--ink-soft); }
 

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 影低書頁，自動抽出書名同螢光筆關鍵字">
   <title>CatBookmark 貓書籤 · 上傳</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261023">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261025">
 </head>
 <body class="page-upload">
   <header class="topbar">
@@ -22,7 +22,7 @@
   </header>
 
   <main class="container">
-    <p class="version-tag" hidden id="version-tag">版本 <span id="app-version">20261023</span>（舊 cache 會令功能冇反應，硬刷新一次）</p>
+    <p class="version-tag" hidden id="version-tag">版本 <span id="app-version">20261025</span>（舊 cache 會令功能冇反應，硬刷新一次）</p>
     <div class="page-banner" id="page-banner" hidden></div>
     <div class="mode-banner" id="mode-banner" hidden>
       <span id="mode-banner-text"></span>
@@ -48,8 +48,40 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261023"></script>
-  <script src="assets/js/upload.js?v=20261023"></script>
+  <!-- 🗂️ 從書本庫中揀：compact 表格＋filter -->
+  <div class="modal-overlay" id="pick-modal" hidden>
+    <div class="modal pick-modal">
+      <h3 class="modal-title">🗂️ 從書本庫揀書</h3>
+      <div class="field">
+        <input id="pick-filter" type="text" placeholder="篩選書名／作者…" autocomplete="off">
+      </div>
+      <div class="pick-scroll">
+        <table class="pick-table">
+          <thead><tr><th>書名</th><th>作者</th></tr></thead>
+          <tbody id="pick-list"></tbody>
+        </table>
+      </div>
+      <p class="pick-count" id="pick-count"></p>
+      <div class="card-actions">
+        <button class="btn btn-ghost" id="pick-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 儲存時確認：書本庫冇呢本書 -->
+  <div class="modal-overlay" id="confirm-modal" hidden>
+    <div class="modal">
+      <h3 class="modal-title">📚 書本庫確認</h3>
+      <p id="confirm-text"></p>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="confirm-ok" type="button">加入書本庫並儲存</button>
+        <button class="btn btn-ghost" id="confirm-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js?v=20261025"></script>
+  <script src="assets/js/upload.js?v=20261025"></script>
   <script>
     /* 版本標籤 + 載入安全網：upload.js 冇載到（舊 cache）就出橫幅 */
     try { document.getElementById('version-tag').hidden = false; } catch (e) {}
