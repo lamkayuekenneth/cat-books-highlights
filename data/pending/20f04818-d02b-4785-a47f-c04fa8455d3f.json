@@ -1,0 +1,14 @@
+{
+  "book_title": "",
+  "page": "27",
+  "tags": [
+    "我很討厭助聽器"
+  ],
+  "_debug": {
+    "b64_len": 57096,
+    "bytes": 42822,
+    "mime": "image/webp",
+    "sha256": "f6d60847960de6b1",
+    "model": "qwen/qwen3-vl-235b-a22b-instruct"
+  }
+}
