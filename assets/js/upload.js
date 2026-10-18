@@ -350,10 +350,14 @@
     this.optPhoto = this.el.querySelector('[data-role="opt-photo"]');
     this.suggestEl = this.el.querySelector('[data-role="suggest"]');
 
+    /* 書名框狀態底色：空 → 紅，有字 → 綠（一開卡就反映） */
+    this.updateTitleState();
+
     /* 書名一打字就收埋警告＋一路打一路 suggest 書本庫書名＋即時檢查書本庫 */
     this.titleInput.addEventListener('input', function () {
       card.titleErrorEl.hidden = true;
       card.titleInput.classList.remove('input-error');
+      card.updateTitleState();
       card.updateSuggest();
       card.checkLibraryHint();
     });
@@ -446,6 +450,7 @@
   Card.prototype.setResult = function (result) {
     var card = this;
     this.titleInput.value = result.book_title || '';
+    this.updateTitleState();
     this.pageInput.value = result.page || '';
     if (result.author) {
       this.authorInput.value = result.author;
@@ -464,6 +469,13 @@
       if (!inLib) card.showLibText(title);
       else card.libText.hidden = true;
     });
+  };
+
+  /* 書名框狀態底色：空 → 紅底（必填），有字 → 綠底 */
+  Card.prototype.updateTitleState = function () {
+    var has = !!this.titleInput.value.trim();
+    this.titleInput.classList.toggle('state-empty', !has);
+    this.titleInput.classList.toggle('state-filled', has);
   };
 
   /* 書名空／未喺書本庫 → 喺三個掣上面出提示（掣本身任何時候都喺度） */
@@ -527,6 +539,7 @@
   /* 揀中書本庫嘅書 → 填入卡片 */
   Card.prototype.applyLibraryBook = function (b) {
     this.titleInput.value = String(b.book_title || '').trim();
+    this.updateTitleState();
     this.titleErrorEl.hidden = true;
     this.titleInput.classList.remove('input-error');
     if (b.author) {
@@ -623,6 +636,7 @@
         return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
       }).then(function (res) {
         if (res.book_title) card.titleInput.value = res.book_title;
+        card.updateTitleState();
         if (res.author) card.authorInput.value = res.author;
         card.authorWrap.hidden = false;
         card.libText.hidden = true;

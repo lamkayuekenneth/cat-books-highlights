@@ -121,6 +121,15 @@ input[type="text"], input[type="password"] {
   min-height: 46px;
 }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192, 127, 42, .15); }
+/* 書名框：空 → 紅底（必填警告），有字 → 綠底（已填） */
+input[data-role="title"].state-empty {
+  background: #fdecea;
+  border-color: var(--danger);
+}
+input[data-role="title"].state-filled {
+  background: #e7f4e7;
+  border-color: var(--ok);
+}
 .hint { font-size: .8rem; color: var(--ink-soft); margin: 6px 0 0; line-height: 1.5; }
 code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85em; }
 
