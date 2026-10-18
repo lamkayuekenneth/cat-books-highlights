@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 書目庫：檢視／編輯已儲存嘅書名同標籤">
   <title>CatBookmark 貓書籤 · 書目庫</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261034">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261035">
 </head>
 <body class="page-library">
   <header class="topbar">
@@ -60,9 +60,72 @@
     </section>
   </main>
 
+  <!-- 編輯書目 modal：書名同「上傳」一樣支援揀書／揀相／拍照＋suggest＋書本庫檢查 -->
+  <div class="modal-overlay" id="lib-edit-modal" hidden>
+    <div class="modal">
+      <h3 class="modal-title">✏️ 編輯書目</h3>
+      <p class="modal-status" id="lib-modal-status"></p>
+      <div class="field field-rel">
+        <label class="field-label" for="lib-title">書名（必填）</label>
+        <input id="lib-title" type="text" data-role="title" placeholder="書名…（一路打會 suggest 書本庫）" autocomplete="off">
+        <div class="suggest" id="lib-suggest" hidden></div>
+        <p class="lib-options-text" id="lib-hint" hidden></p>
+        <div class="lib-options-actions">
+          <button class="btn btn-small" id="lib-pick" type="button">🗂️ 揀書</button>
+          <label class="btn btn-small" for="lib-photo">🖼️ 揀相<input type="file" id="lib-photo" accept="image/*" hidden></label>
+          <label class="btn btn-small" for="lib-camera">📷 拍照<input type="file" id="lib-camera" accept="image/*" capture="environment" hidden></label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="lib-tag">tag（必填）</label>
+        <input id="lib-tag" type="text" placeholder="標籤文字…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field-label" for="lib-page">頁數（可選，冇就留空）</label>
+        <input id="lib-page" type="text" placeholder="冇就留空" autocomplete="off">
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="lib-save" type="button">儲存</button>
+        <button class="btn btn-ghost" id="lib-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗂️ 從書本庫中揀書：compact 表格＋filter -->
+  <div class="modal-overlay" id="pick-modal" hidden>
+    <div class="modal pick-modal">
+      <h3 class="modal-title">🗂️ 從書本庫揀書</h3>
+      <div class="field">
+        <input id="pick-filter" type="text" placeholder="篩選書名／作者…" autocomplete="off">
+      </div>
+      <div class="pick-scroll">
+        <table class="pick-table">
+          <thead><tr><th>書名</th><th>作者</th></tr></thead>
+          <tbody id="pick-list"></tbody>
+        </table>
+      </div>
+      <p class="pick-count" id="pick-count"></p>
+      <div class="card-actions">
+        <button class="btn btn-ghost" id="pick-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 儲存時確認：書本庫冇呢本書 -->
+  <div class="modal-overlay" id="confirm-modal" hidden>
+    <div class="modal">
+      <h3 class="modal-title">📚 書本庫確認</h3>
+      <p id="confirm-text"></p>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="confirm-ok" type="button">加入書本庫並儲存</button>
+        <button class="btn btn-ghost" id="confirm-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261034"></script>
-  <script src="assets/js/library.js?v=20261034"></script>
+  <script src="assets/js/common.js?v=20261035"></script>
+  <script src="assets/js/library.js?v=20261035"></script>
 </body>
 </html>
