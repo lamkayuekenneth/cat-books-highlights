@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CatBookmark 貓書籤 — 書本庫：顯示／編輯書名＋作者，AI 認書名作者">
+  <title>CatBookmark 貓書籤 · 書本庫</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=20261023">
+</head>
+<body class="page-books">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">🐱</span> CatBookmark <span class="brand-sub">貓書籤</span></a>
+      <nav class="nav">
+        <a class="nav-link" href="index.html">📷 上傳</a>
+        <a class="nav-link" href="library.html">📚 書目庫</a>
+        <a class="nav-link active" href="books.html">🗂️ 書本庫</a>
+        <a class="nav-link" href="settings.html">⚙️ 設定</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="section-head">
+        <h2 class="section-title">🗂️ 書本庫（書名＋作者）</h2>
+        <div class="section-actions">
+          <button class="btn btn-ghost" id="book-manual" type="button">✍️ 手動新增</button>
+          <label class="btn btn-primary" for="book-photo">
+            📸 影相／揀相，AI 認書名＋作者
+            <input type="file" id="book-photo" accept="image/*" hidden>
+          </label>
+          <label class="btn btn-ghost" for="book-camera">
+            📷 影相
+            <input type="file" id="book-camera" accept="image/*" capture="environment" hidden>
+          </label>
+          <button class="btn btn-ghost" id="reload" type="button">重新載入</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="field">
+          <label class="field-label" for="filter-title">書名（揀或手動輸入）</label>
+          <input id="filter-title" type="text" list="title-list" placeholder="揀或輸入書名…" autocomplete="off">
+          <datalist id="title-list"></datalist>
+        </div>
+        <div class="field">
+          <label class="field-label" for="filter-author">作者（揀或手動輸入）</label>
+          <input id="filter-author" type="text" list="author-list" placeholder="揀或輸入作者…" autocomplete="off">
+          <datalist id="author-list"></datalist>
+        </div>
+        <button class="btn btn-ghost" id="filter-clear" type="button">清除篩選</button>
+      </div>
+
+      <p class="filter-count" id="filter-count"></p>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-wrap">
+        <table class="book-table">
+          <thead>
+            <tr><th>書名</th><th>作者</th><th>操作</th></tr>
+          </thead>
+          <tbody id="book-list"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- 新增／編輯書本 modal（AI 認完／手動填完 → 確認 → 儲存） -->
+  <div class="modal-overlay" id="book-modal" hidden>
+    <div class="modal">
+      <h3 class="modal-title" id="modal-title">📚 新增書本</h3>
+      <div class="modal-preview" id="modal-preview"></div>
+      <p class="modal-status" id="modal-status"></p>
+      <div class="field">
+        <label class="field-label" for="modal-book-title">書名（必填）</label>
+        <input id="modal-book-title" type="text" placeholder="書名…" autocomplete="off">
+        <p class="field-error" id="modal-title-error" hidden>⚠ 書名係必填：AI 認唔到都可以自己打返。</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="modal-book-author">作者（可選，之後可喺呢頁改）</label>
+        <input id="modal-book-author" type="text" placeholder="作者…（optional）" autocomplete="off">
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" id="modal-save" type="button">儲存</button>
+        <button class="btn btn-ghost" id="modal-cancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="assets/js/common.js?v=20261023"></script>
+  <script src="assets/js/books.js?v=20261023"></script>
+</body>
+</html>

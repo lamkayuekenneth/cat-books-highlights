@@ -35,6 +35,17 @@
     '書名或頁碼搵唔到就寫空字串。唔好輸出任何其他文字、解釋、或者 markdown 標記。';
   var USER_PROMPT = '請睇吓呢張書頁相片：核實有冇書名（章節名唔算，冇就留空）、寫出頁碼（有先寫）；每一處螢光筆標記，只抄螢光筆實際塗住嗰啲字成為一個 tag（唔好連螢光筆以外嘅字）；如果睇唔到螢光筆，tags 輸出 []，唔好自己拆字。';
 
+  /* ---------- 書本庫：認書名＋作者用嘅 prompt（同 books.js 一致） ---------- */
+  var BOOKS_SYSTEM_PROMPT =
+    '你係一個協助整理書目資料嘅助手。用戶影咗一本書嘅相片（通常係封面、書脊或版權頁，亦可能係內頁）。\n' +
+    '請認出兩樣嘢：\n' +
+    '1. 書名：書上印嘅書名（封面最突出嘅標題，或者版權頁嘅書名）。認唔到就寫空字串，唔好亂估。\n' +
+    '2. 作者：書上印嘅作者名（通常喺「著／作者／撰／by」附近，或者封面署名）。認唔到就寫空字串，唔好亂估。\n' +
+    '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
+    '{"book_title": "書名", "author": "作者"}\n' +
+    '書名或作者認唔到就寫空字串。唔好輸出任何其他文字、解釋或者 markdown 標記。';
+  var BOOKS_USER_PROMPT = '請睇吓呢張相：認出書名同作者（認唔到就留空）。';
+
   /* ---------- 直連模式提示 banner：未啟用直連就話畀用戶知 ---------- */
   (function showModeBanner() {
     var banner = document.getElementById('mode-banner');
@@ -187,7 +198,7 @@
     return null;
   }
 
-  function directAnalyze(dataUrl) {
+  function directAnalyze(dataUrl, sysPrompt, userPrompt) {
     var cfg = CB.getAiCache();
     var key = CB.getOrKey();
     /* Base URL 正規化：剝走用戶可能連埋嘅 /chat/completions（防雙重 endpoint → 404） */
@@ -203,10 +214,10 @@
       body: JSON.stringify({
         model: cfg.model,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: sysPrompt || SYSTEM_PROMPT },
           { role: 'user', content: [
             { type: 'image_url', image_url: { url: dataUrl } },
-            { type: 'text', text: USER_PROMPT }
+            { type: 'text', text: userPrompt || USER_PROMPT }
           ]}
         ],
         temperature: 0.1,
@@ -223,13 +234,14 @@
         if (!parsed) throw new Error('模型回應無法解析');
         var book_title = String(parsed.book_title || '').trim();
         var page = String(parsed.page || '').trim();
+        var author = String(parsed.author || '').trim();
         var tags = [];
         var seen = {};
         (Array.isArray(parsed.tags) ? parsed.tags : []).forEach(function (t) {
           t = String(t).trim().replace(/^#+/, '').trim();
           if (t && !seen[t] && tags.length < 30) { seen[t] = true; tags.push(t); }
         });
-        return { book_title: book_title, page: page, tags: tags };
+        return { book_title: book_title, page: page, author: author, tags: tags };
       });
     });
   }
@@ -273,6 +285,10 @@
       '    <input data-role="title" type="text" placeholder="書名…" autocomplete="off">' +
       '    <p class="field-error" data-role="title-error" hidden>⚠ 書名係必填——AI 喺頁面搵唔到書名（可能冇印），你可以手動打返書名，先至可以儲存。</p>' +
       '  </div>' +
+      '  <div class="field" data-role="author-wrap" hidden>' +
+      '    <span class="field-label">作者（可選，之後可喺「書本庫」頁改）</span>' +
+      '    <input data-role="author" type="text" placeholder="作者…（optional）" autocomplete="off">' +
+      '  </div>' +
       '  <div class="field">' +
       '    <span class="field-label">頁數（可編輯，冇就留空）</span>' +
       '    <input data-role="page" type="text" placeholder="例如 150" autocomplete="off">' +
@@ -281,6 +297,13 @@
       '    <span class="field-label">標籤（#tag，可刪除／編輯／新增）</span>' +
       '    <div class="chips" data-role="chips"></div>' +
       '    <input class="add-tag" data-role="add" type="text" placeholder="＋ 新增標籤，按 Enter" autocomplete="off">' +
+      '  </div>' +
+      '</div>' +
+      '<div class="lib-options" data-role="lib-options" hidden>' +
+      '  <p class="lib-options-text" data-role="lib-text"></p>' +
+      '  <div class="lib-options-actions">' +
+      '    <button class="btn btn-small btn-primary" data-role="opt-manual" type="button">✍️ 手動輸入書名＋作者</button>' +
+      '    <button class="btn btn-small" data-role="opt-photo" type="button">📷 影相／揀相認書名＋作者</button>' +
       '  </div>' +
       '</div>' +
       '<div class="card-actions">' +
@@ -297,11 +320,28 @@
     this.saveBtn = this.el.querySelector('[data-role="save"]');
     this.discardBtn = this.el.querySelector('[data-role="discard"]');
     this.titleErrorEl = this.el.querySelector('[data-role="title-error"]');
+    this.authorWrap = this.el.querySelector('[data-role="author-wrap"]');
+    this.authorInput = this.el.querySelector('[data-role="author"]');
+    this.libOptions = this.el.querySelector('[data-role="lib-options"]');
+    this.libText = this.el.querySelector('[data-role="lib-text"]');
+    this.optManual = this.el.querySelector('[data-role="opt-manual"]');
+    this.optPhoto = this.el.querySelector('[data-role="opt-photo"]');
 
     /* 書名一打字就收埋警告 */
     this.titleInput.addEventListener('input', function () {
       card.titleErrorEl.hidden = true;
       card.titleInput.classList.remove('input-error');
+    });
+
+    /* 「未喺書本庫」兩個選項 */
+    this.optManual.addEventListener('click', function () {
+      card.authorWrap.hidden = false;
+      card.libOptions.hidden = true;
+      card.titleInput.focus();
+      toast('填返書名（必填）＋作者（可選），再撳儲存——會自動加入「書本庫」', 'ok');
+    });
+    this.optPhoto.addEventListener('click', function () {
+      card.pickCoverPhoto();
     });
 
     /* 預覽只放喺瀏覽器記憶體；儲存後清除 */
@@ -376,11 +416,75 @@
   };
 
   Card.prototype.setResult = function (result) {
+    var card = this;
     this.titleInput.value = result.book_title || '';
     this.pageInput.value = result.page || '';
+    if (result.author) {
+      this.authorInput.value = result.author;
+      this.authorWrap.hidden = false;
+    }
     this._renderChips(Array.isArray(result.tags) ? result.tags : []);
     this.saveBtn.disabled = false;
     this.status('AI 分析完成，可以編輯', 'ok');
+    /* 檢查書本庫：tag 一定要掛喺書本庫內嘅書；未喺書本庫就彈兩選項 */
+    var title = this.titleInput.value.trim();
+    CB.freshText('data/books_meta.json').then(function (text) {
+      var meta = [];
+      try { meta = JSON.parse(text); } catch (e) { meta = []; }
+      if (!Array.isArray(meta)) meta = [];
+      var inLib = meta.some(function (b) {
+        return String(b.book_title || '').trim() === title;
+      });
+      card._inLibrary = inLib;
+      if (!inLib) card.showLibOptions(title);
+    }).catch(function () {
+      card._inLibrary = false;
+      card.showLibOptions(title);
+    });
+  };
+
+  /* 「未喺書本庫」：tag 一定要掛喺書本庫內嘅書 → 兩個選項 */
+  Card.prototype.showLibOptions = function (title) {
+    this.libText.innerHTML = title
+      ? '⚠ 「<b>' + String(title).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        }) + '</b>」未喺「書本庫」入面。新 tag 一定要掛喺書本庫內嘅書——揀下面其中一個方式：'
+      : '⚠ AI 冇喺相中搵到書名。新 tag 一定要掛喺書本庫內嘅書——揀下面其中一個方式：';
+    this.libOptions.hidden = false;
+  };
+
+  /* 選項 2：影相／揀相 → AI（直連）認書名＋作者 → 填入卡片 */
+  Card.prototype.pickCoverPhoto = function () {
+    var card = this;
+    if (!CB.getOrKey()) {
+      toast('⚠ 需要「🚀 瀏覽器直連」（設定頁貼 OpenRouter Key）先可以 AI 認書名；或者揀「✍️ 手動輸入」', 'warn');
+      return;
+    }
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.addEventListener('change', function () {
+      var file = inp.files && inp.files[0];
+      if (!file) return;
+      card.status('AI 認緊書名＋作者…（直連，幾秒）');
+      compressImage(file).then(function (compressed) {
+        return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
+      }).then(function (res) {
+        if (res.book_title) card.titleInput.value = res.book_title;
+        if (res.author) card.authorInput.value = res.author;
+        card.authorWrap.hidden = false;
+        card.libOptions.hidden = true;
+        card.titleInput.classList.remove('input-error');
+        card.titleErrorEl.hidden = true;
+        card.status((res.book_title || res.author)
+          ? '✓ AI 認完書名／作者，改完先撳儲存'
+          : '⚠ AI 認唔到——可以自己打，或者揀「✍️ 手動輸入」', res.book_title ? 'ok' : 'warn');
+      }).catch(function (err) {
+        card.status('✗ AI 認書名失敗：' + (err.message || err) + '（可以揀「✍️ 手動輸入」）', 'error');
+        toast('AI 認書名失敗：' + (err.message || err), 'error');
+      });
+    });
+    inp.click();
   };
 
   Card.prototype.showError = function (msg) {
@@ -393,6 +497,7 @@
     if (card._saved) return;
     var title = card.titleInput.value.trim();
     var page = card.pageInput.value.trim();
+    var author = card.authorInput.value.trim();
     var tags = card.getTags();
     if (!title) {
       card.titleErrorEl.hidden = false;
@@ -407,21 +512,41 @@
 
     card.status('儲存緊…');
     card.saveBtn.disabled = true;
-    CB.freshText('data/books.json').then(function (text) {
-      var rows;
-      try { rows = JSON.parse(text); } catch (e) { rows = []; }
-      if (!Array.isArray(rows)) rows = [];
-      var seen = {};
-      rows.forEach(function (r) {
-        seen[(r.book_title || '') + '\u0000' + (r.page || '') + '\u0000' + (r.tag || '')] = true;
+    /* 1) 先確保本書喺「書本庫」（新 tag 一定要掛喺書本庫內嘅書）：
+         書名一樣 → 更新作者（有作者先至更新）；唔一樣 → 加新行 */
+    CB.freshText('data/books_meta.json').then(function (text) {
+      var meta = [];
+      try { meta = JSON.parse(text); } catch (e) { meta = []; }
+      if (!Array.isArray(meta)) meta = [];
+      var idx = -1;
+      meta.forEach(function (b, i) {
+        if (String(b.book_title || '').trim() === title) idx = i;
       });
-      tags.forEach(function (t) {
-        var key = title + '\u0000' + page + '\u0000' + t;
-        if (!seen[key]) { rows.push({ book_title: title, page: page, tag: t }); seen[key] = true; }
+      if (idx >= 0) {
+        if (author) meta[idx].author = author;
+      } else {
+        meta.push({ book_title: title, author: author });
+      }
+      return CB.writeFile('data/books_meta.json',
+        JSON.stringify(meta, null, 2) + '\n', '書本庫新增／更新：' + title);
+    }).then(function () {
+      /* 2) 然後先至寫 tag 入 books.json */
+      return CB.freshText('data/books.json').then(function (text) {
+        var rows;
+        try { rows = JSON.parse(text); } catch (e) { rows = []; }
+        if (!Array.isArray(rows)) rows = [];
+        var seen = {};
+        rows.forEach(function (r) {
+          seen[(r.book_title || '') + '\u0000' + (r.page || '') + '\u0000' + (r.tag || '')] = true;
+        });
+        tags.forEach(function (t) {
+          var key = title + '\u0000' + page + '\u0000' + t;
+          if (!seen[key]) { rows.push({ book_title: title, page: page, tag: t }); seen[key] = true; }
+        });
+        return rows;
+      }).then(function (rows) {
+        return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n', '新增書目：' + title);
       });
-      return rows;
-    }).then(function (rows) {
-      return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n', '新增書目：' + title);
     }).then(function () {
       if (card._direct) return null; /* 直連模式冇 pending 檔 */
       return CB.deleteFile('data/pending/' + card.id + '.json')
