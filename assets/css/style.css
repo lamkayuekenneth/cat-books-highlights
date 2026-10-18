@@ -362,6 +362,9 @@ code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85
   padding: 16px;
   z-index: 50;
 }
+/* hidden 一定要蓋過 display:flex，唔係一入頁就見到 modal */
+.modal-overlay[hidden] { display: none !important; }
+.modal-sources { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .modal {
   background: var(--surface);
   border-radius: var(--radius);

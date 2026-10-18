@@ -150,10 +150,9 @@
   var loadBtn = document.getElementById('reload');
   var photoInput = document.getElementById('book-photo');
   var cameraInput = document.getElementById('book-camera');
-  var manualBtn = document.getElementById('book-manual');
+  var addBtn = document.getElementById('book-add');
 
   var modal = document.getElementById('book-modal');
-  var modalTitleEl = document.getElementById('modal-title');
   var modalPreview = document.getElementById('modal-preview');
   var modalStatus = document.getElementById('modal-status');
   var modalBookTitle = document.getElementById('modal-book-title');
@@ -170,7 +169,8 @@
     render();
   });
   if (loadBtn) loadBtn.addEventListener('click', load);
-  if (manualBtn) manualBtn.addEventListener('click', function () { openModal(null); });
+  /* 「＋ 新增書本」先至開 modal——一入頁唔會彈出嚟 */
+  if (addBtn) addBtn.addEventListener('click', function () { openModal(null); });
 
   photoInput.addEventListener('change', function () {
     if (photoInput.files.length) handlePhotoFile(photoInput.files[0]);
@@ -323,16 +323,15 @@
     });
   }
 
-  /* ---------- modal：新增／編輯書本 ---------- */
+  /* ---------- modal：新增書本 ---------- */
   function openModal(data) {
-    modalTitleEl.textContent = (data && data.book_title) ? '📚 編輯書本' : '📚 新增書本';
     modalBookTitle.value = (data && data.book_title) || '';
     modalBookAuthor.value = (data && data.author) || '';
     modalTitleError.hidden = true;
     modalBookTitle.classList.remove('input-error');
-    modalStatus.textContent = '';
-    modalStatus.className = 'modal-status';
     modalPreview.innerHTML = '';
+    modalStatus.className = 'modal-status';
+    modalStatus.textContent = '可以直接打書名＋作者，或者用上面「🖼️ 從相簿揀相／📷 影相」畀 AI 認。';
     modal.hidden = false;
     modalBookTitle.focus();
   }
@@ -371,19 +370,18 @@
     });
   }
 
-  /* ---------- 影相／揀相 → AI 認書名＋作者 ---------- */
+  /* ---------- 影相／揀相 → AI 認書名＋作者（modal 已開先至有呢兩個掣） ---------- */
   function handlePhotoFile(file) {
     if (!file) return;
     if (file.type && file.type.indexOf('image/') !== 0 && !/\.(heic|heif|jpe?g|png|webp|gif|bmp|avif)$/i.test(file.name || '')) {
       return toast('請揀相片檔案', 'warn');
     }
+    if (modal.hidden) openModal(null); /* 保險：modal 未開就開返 */
     if (!CB.getOrKey()) {
-      openModal(null);
       modalStatus.className = 'modal-status warn';
       modalStatus.textContent = '⚠ 未啟用「🚀 瀏覽器直連」（設定頁貼 OpenRouter Key）——AI 認書名作者要直連先得。你可以照手動打字。';
       return;
     }
-    openModal(null);
     modalStatus.className = 'modal-status';
     modalStatus.textContent = 'AI 認緊書名＋作者…（幾秒，相片唔會上傳／儲存）';
     var img = document.createElement('img');

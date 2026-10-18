@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 書本庫：顯示／編輯書名＋作者，AI 認書名作者">
   <title>CatBookmark 貓書籤 · 書本庫</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261023">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261024">
 </head>
 <body class="page-books">
   <header class="topbar">
@@ -26,15 +26,7 @@
       <div class="section-head">
         <h2 class="section-title">🗂️ 書本庫（書名＋作者）</h2>
         <div class="section-actions">
-          <button class="btn btn-ghost" id="book-manual" type="button">✍️ 手動新增</button>
-          <label class="btn btn-primary" for="book-photo">
-            📸 影相／揀相，AI 認書名＋作者
-            <input type="file" id="book-photo" accept="image/*" hidden>
-          </label>
-          <label class="btn btn-ghost" for="book-camera">
-            📷 影相
-            <input type="file" id="book-camera" accept="image/*" capture="environment" hidden>
-          </label>
+          <button class="btn btn-primary" id="book-add" type="button">＋ 新增書本</button>
           <button class="btn btn-ghost" id="reload" type="button">重新載入</button>
         </div>
       </div>
@@ -68,10 +60,20 @@
     </section>
   </main>
 
-  <!-- 新增／編輯書本 modal（AI 認完／手動填完 → 確認 → 儲存） -->
+  <!-- 新增書本 modal（按「＋ 新增書本」先至開；入面先揀 upload／拍照，或者直接打字） -->
   <div class="modal-overlay" id="book-modal" hidden>
     <div class="modal">
-      <h3 class="modal-title" id="modal-title">📚 新增書本</h3>
+      <h3 class="modal-title">📚 新增書本</h3>
+      <div class="modal-sources">
+        <label class="btn btn-primary" for="book-photo">
+          🖼️ 從相簿揀相（AI 認書名＋作者）
+          <input type="file" id="book-photo" accept="image/*" hidden>
+        </label>
+        <label class="btn btn-ghost" for="book-camera">
+          📷 影相（AI 認書名＋作者）
+          <input type="file" id="book-camera" accept="image/*" capture="environment" hidden>
+        </label>
+      </div>
       <div class="modal-preview" id="modal-preview"></div>
       <p class="modal-status" id="modal-status"></p>
       <div class="field">
@@ -92,7 +94,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261023"></script>
-  <script src="assets/js/books.js?v=20261023"></script>
+  <script src="assets/js/common.js?v=20261024"></script>
+  <script src="assets/js/books.js?v=20261024"></script>
 </body>
 </html>
