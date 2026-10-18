@@ -339,9 +339,31 @@
       var newTitle = tr.querySelector('[data-role="title"]').value.trim();
       var newAuthor = tr.querySelector('[data-role="author"]').value.trim();
       if (!newTitle) return toast('書名不可為空', 'warn');
-      saveAll(upsert(allBooks.filter(function (x) {
-        return String(x.book_title || '').trim() !== String(b.book_title || '').trim();
-      }), newTitle, newAuthor));
+      var oldTitle = String(b.book_title || '').trim();
+      var metaNext = upsert(allBooks.filter(function (x) {
+        return String(x.book_title || '').trim() !== oldTitle;
+      }), newTitle, newAuthor);
+      if (newTitle === oldTitle) { saveAll(metaNext); return; }
+      /* 書名改咗 → 同步將書目庫（books.json）入面掛喺舊書名嘅 tag 全部改做新書名 */
+      CB.freshText('data/books.json').then(function (text) {
+        var rows;
+        try { rows = JSON.parse(text); } catch (e) { rows = []; }
+        if (!Array.isArray(rows)) rows = [];
+        var changed = false;
+        rows.forEach(function (r) {
+          if (String(r.book_title || '').trim() === oldTitle) {
+            r.book_title = newTitle;
+            changed = true;
+          }
+        });
+        if (!changed) return;
+        return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n',
+          '書本庫改名同步 tag 書名：' + oldTitle + ' → ' + newTitle);
+      }).catch(function (err) {
+        toast('同步 tag 書名失敗（照樣儲存書本庫）：' + err.message, 'warn');
+      }).then(function () {
+        saveAll(metaNext);
+      });
     });
   }
 
