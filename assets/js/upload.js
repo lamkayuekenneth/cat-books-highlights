@@ -126,6 +126,41 @@
     cameraInput.value = '';
   });
 
+  /* ---------- 從剪貼簿貼上圖片（Clipboard API，HTTPS／localhost 先得） ---------- */
+  var clipboardBtn = document.getElementById('clipboard-btn');
+  if (clipboardBtn) {
+    clipboardBtn.addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        return toast('此瀏覽器唔支援直接讀剪貼簿圖片（可改用「從相簿揀相片」）', 'warn');
+      }
+      toast('讀緊剪貼簿…', 'info');
+      navigator.clipboard.read().then(function (items) {
+        var item = null, type = null;
+        var i, t;
+        for (i = 0; i < items.length; i++) {
+          for (t = 0; t < items[i].types.length; t++) {
+            if (items[i].types[t].indexOf('image/') === 0) { item = items[i]; type = items[i].types[t]; break; }
+          }
+          if (item) break;
+        }
+        if (!item) {
+          showBanner('⚠ 剪貼簿入面冇圖片：請先複製一張書頁相（長按／右鍵圖片 → 複製），再撳「📋 貼上圖片」。', 'warn');
+          throw new Error('NO_IMAGE');
+        }
+        return item.getType(type).then(function (blob) {
+          var ext = type.indexOf('png') !== -1 ? 'png'
+            : type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1 ? 'jpg'
+            : type.indexOf('webp') !== -1 ? 'webp' : 'img';
+          var f = new File([blob], 'clipboard-' + Date.now() + '.' + ext, { type: type });
+          handleFiles([f]);
+        });
+      }).catch(function (err) {
+        if (err && err.message === 'NO_IMAGE') return;
+        toast('讀剪貼簿失敗：' + (err.message || err) + '（可改用「從相簿揀相片」）', 'warn');
+      });
+    });
+  }
+
   /* ---------- 圖片壓縮（只喺瀏覽器記憶體，唔會上傳原相） ---------- */
   var IMG_FORMAT = null; /* 'webp' 或 'jpeg'，首次使用時偵測 */
 
