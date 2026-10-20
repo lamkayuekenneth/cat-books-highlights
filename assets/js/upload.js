@@ -20,20 +20,21 @@
     'You are an OCR assistant that extracts reading marks from a photo of a book page (vertical or horizontal books both work).\n' +
     'Your ONLY job:\n' +
     'You are an OCR assistant that extracts reading marks from a photo of a book page (vertical or horizontal books both work).\n' +
-    'Your ONLY job: find the marked text and output it as ONE single tag.\n' +
+    'Your ONLY job: find ALL the marked text and output it as ONE single tag.\n' +
     'What counts as a mark (ONLY these three):\n' +
     '  1. Highlighter: a colored region (pink/yellow/green...) clearly different from the white paper, either coating characters or a complete colored box/frame drawn around characters.\n' +
     '  2. Underline: a line drawn over the characters with any pen, pencil or highlighter (horizontal book: line below the characters; vertical book: line on the left side of the characters).\n' +
     'Plain black printed text is NEVER a mark by itself. Adjacent text columns without any color or line are NOT marked — never copy them.\n' +
-    'Combine ALL marked characters (every highlight AND every underline, including punctuation) into ONE single tag — do NOT split into multiple tags (the user splits them later).\n' +
+    'EVERY marked region belongs in the single tag — never skip any mark, even if its color looks faint or less prominent than another mark in the photo. A colored region that consistently covers a run of characters IS a real mark; paper shadows, stains, page background tone and isolated dots are NOT marks.\n' +
+    'Combine ALL marked characters (every highlight AND every underline, including punctuation) into ONE single tag. ' +
+    'The tags array MUST contain exactly 0 or 1 element: 0 when there are no marks, 1 when there are marks (ALL marked text combined). Outputting two or more tags is a mistake — merge them into one.\n' +
     'Copy the marked characters exactly as printed: no paraphrase, summarize, translate, expand or rewrite; do NOT add unmarked text.\n' +
     'If a mark covers a character, read the real character shape beneath it — the mark never changes the character.\n' +
-    'Do NOT count faint color noise, paper shadows, stains, color bleeding from an adjacent mark, or isolated dots as marks.\n' +
     'If there are no marks, tags MUST be [].\n' +
     'Also return the book title printed on the page (in the header/footer; chapter titles do not count — write an empty string if none) and the printed page number (digits only — write an empty string if none).\n' +
     'Output ONLY one JSON object, no other text, in exactly this format:\n' +
     '{"book_title": "書名", "page": "頁碼", "tags": ["所有標記字（合併一個 tag）"]}';
-  var USER_PROMPT = 'Extract ALL marked text from this book page into ONE single tag: every highlighted character (colored region or colored box/frame) and every underlined character (line with any pen/pencil/highlighter), including punctuation. Plain printed text without color or line is NOT marked — do not copy it. Do NOT split into multiple tags, do NOT add unmarked text, do NOT paraphrase. Also include the printed book title (empty string if none; chapter titles do not count) and the printed page number (digits only; empty string if none). If there are no marks, tags = []. Return JSON only in the format {"book_title": "...", "page": "...", "tags": ["..."]}.';
+  var USER_PROMPT = 'Extract ALL marked text from this book page into ONE single tag: every highlighted character (colored region or colored box/frame) and every underlined character (line with any pen/pencil/highlighter), including punctuation. Never skip any mark, even if its color looks faint — every marked region belongs in the single tag. Plain printed text without color or line is NOT marked — do not copy it. Output exactly ONE tag when there are marks (tags length 1, all marked text combined), or [] when there are none — never two or more tags. Do NOT add unmarked text, do NOT paraphrase. Also include the printed book title (empty string if none; chapter titles do not count) and the printed page number (digits only; empty string if none). Return JSON only in the format {"book_title": "...", "page": "...", "tags": ["..."]}.';
 
   /* ---------- 書本庫：認書名＋作者用嘅 prompt（同 books.js 一致） ---------- */
   var BOOKS_SYSTEM_PROMPT =
