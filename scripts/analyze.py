@@ -41,7 +41,8 @@ SYSTEM_PROMPT = (
     "3. Check the page for reading marks (vertical or horizontal books both work):\n"
     "   - Highlighter/marker (usually pink, yellow, or green marker applied as a background color over characters);\n"
     "   - Underline (a straight line drawn below the text, with pencil, pen, OR a highlighter/marker; "
-    "note: in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n"
+    "IMPORTANT: the underline marks the characters directly ABOVE the line — it belongs to the text above it, never the text below it; "
+    "in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n"
     "For each mark (highlighter or underline), copy only the characters that are actually marked (highlighted/underlined characters) as ONE tag; "
     "do not include unmarked surrounding characters, do not copy whole sentences/paragraphs, do not split, do not paraphrase, do not rewrite, do not translate, do not expand. "
     "If the page has no highlights or underlines at all, tags MUST be an empty array []; never split ordinary page text into tags. "
@@ -57,7 +58,7 @@ SYSTEM_PROMPT = (
     "Write an empty string if the book title or page number cannot be found. Do not output any other text, explanation, or markdown formatting."
 )
 
-USER_PROMPT = "Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags."
+USER_PROMPT = "Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags."
 
 
 def write_result(image_id, result):
