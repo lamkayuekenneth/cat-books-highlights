@@ -468,6 +468,7 @@
     }
     modalStatus.className = 'modal-status';
     modalStatus.textContent = 'AI 認緊書名＋作者…（幾秒，相片唔會上傳／儲存）';
+    CB.aiBusy('AI 認緊書名＋作者…');
     var img = document.createElement('img');
     var url = URL.createObjectURL(file);
     img.src = url;
@@ -477,6 +478,7 @@
     compressImage(file).then(function (compressed) {
       return directAnalyzeBooks(compressed.dataUrl);
     }).then(function (res) {
+      CB.aiReady();
       if (res.book_title) modalBookTitle.value = res.book_title;
       if (res.author) modalBookAuthor.value = res.author;
       modalStatus.className = 'modal-status ok';
@@ -484,6 +486,7 @@
         ? '✓ AI 認完，可以改完先撳「儲存」。'
         : '⚠ AI 認唔到書名／作者——可以自己打字，或者換張清啲嘅封面相再試。';
     }).catch(function (err) {
+      CB.aiReady();
       modalStatus.className = 'modal-status error';
       modalStatus.textContent = '✗ AI 認唔到：' + (err.message || err) + '——你可以照手動打字，或者喺設定頁檢查直連 Key／Model。';
       toast('AI 認書名失敗：' + (err.message || err), 'error');

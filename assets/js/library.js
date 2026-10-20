@@ -271,9 +271,11 @@
       return;
     }
     modalStatus('AI 認緊書名＋作者…（直連，幾秒）');
+    CB.aiBusy('AI 認緊書名＋作者…');
     compressImage(file).then(function (compressed) {
       return directAnalyze(compressed.dataUrl);
     }).then(function (res) {
+      CB.aiReady();
       if (res.book_title) {
         libTitle.value = res.book_title;
         aiAuthor = res.author;
@@ -285,6 +287,7 @@
         ? '✓ AI 認完：「' + res.book_title + '」' + (res.author ? '（' + res.author + '）' : '') + '，改完先撳儲存'
         : '⚠ AI 認唔到——可以自己打返書名，或者喺下面揀書／再揀相', res.book_title ? 'ok' : 'warn');
     }).catch(function (err) {
+      CB.aiReady();
       modalStatus('✗ AI 認書名失敗：' + (err.message || err) + '（可以自己打返書名）', 'error');
       toast('AI 認書名失敗：' + (err.message || err), 'error');
     });

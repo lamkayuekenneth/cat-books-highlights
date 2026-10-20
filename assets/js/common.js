@@ -169,6 +169,29 @@
         method: 'POST',
         body: JSON.stringify({ event_type: 'analyze', client_payload: inputs })
       });
+    },
+
+    /* AI 分析全屏 loading 遮罩：顯示期間用戶唔可以操作 UI */
+    aiBusy: function (msg) {
+      var ov = document.getElementById('cb-ai-overlay');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'cb-ai-overlay';
+        ov.className = 'ai-overlay';
+        ov.hidden = true;
+        ov.innerHTML = '<div class="ai-overlay-box">' +
+          '<div class="ai-spinner"></div>' +
+          '<div class="ai-overlay-msg" id="cb-ai-msg">AI 分析中…</div>' +
+          '</div>';
+        document.body.appendChild(ov);
+      }
+      var m = document.getElementById('cb-ai-msg');
+      if (m) m.textContent = msg || 'AI 分析中…';
+      ov.hidden = false;
+    },
+    aiReady: function () {
+      var ov = document.getElementById('cb-ai-overlay');
+      if (ov) ov.hidden = true;
     }
   };
 

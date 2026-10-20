@@ -675,9 +675,11 @@
       var file = inp.files && inp.files[0];
       if (!file) return;
       card.status('AI 認緊書名＋作者…（直連，幾秒）');
+      CB.aiBusy('AI 認緊書名＋作者…');
       compressImage(file).then(function (compressed) {
         return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
       }).then(function (res) {
+        CB.aiReady();
         if (res.book_title) card.titleInput.value = res.book_title;
         card.updateTitleState();
         if (res.author) card.authorInput.value = res.author;
@@ -689,6 +691,7 @@
           ? '✓ AI 認完書名／作者，改完先撳儲存'
           : '⚠ AI 認唔到——可以自己打返書名，或者喺下面揀書／再揀相', res.book_title ? 'ok' : 'warn');
       }).catch(function (err) {
+        CB.aiReady();
         card.status('✗ AI 認書名失敗：' + (err.message || err) + '（可以自己打返書名）', 'error');
         toast('AI 認書名失敗：' + (err.message || err), 'error');
       });
@@ -852,6 +855,7 @@
     }
 
     var chain = Promise.resolve();
+    CB.aiBusy(files.length > 1 ? ('AI 分析緊 ' + files.length + ' 張相…') : 'AI 分析緊…');
     files.forEach(function (file) {
       chain = chain.then(function () {
         var id = (crypto.randomUUID ? crypto.randomUUID()
@@ -882,6 +886,9 @@
         });
       });
     });
+
+    /* 成個分析 chain 完晒先收起遮罩（多張相順序分析都 cover） */
+    chain.then(function () { CB.aiReady(); }, function () { CB.aiReady(); });
   }
 
   window.handleFiles = handleFiles;
