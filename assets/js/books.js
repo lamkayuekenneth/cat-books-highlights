@@ -120,7 +120,7 @@
           ]}
         ],
         temperature: 0.1,
-        max_tokens: 300
+        max_tokens: 800
       })
     }).then(function (res) {
       return res.json().catch(function () { return null; }).then(function (j) {

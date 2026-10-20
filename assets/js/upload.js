@@ -275,7 +275,7 @@
           ]}
         ],
         temperature: 0.1,
-        max_tokens: 500
+        max_tokens: 2000
       })
     }).then(function (res) {
       return res.json().catch(function () { return null; }).then(function (j) {
@@ -283,9 +283,17 @@
           var msg = (j && j.error) ? (j.error.message || JSON.stringify(j.error)) : ('HTTP ' + res.status);
           throw new Error('OpenRouter HTTP ' + res.status + ': ' + msg);
         }
-        var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        var choice = j && j.choices && j.choices[0];
+        var content = choice && choice.message && choice.message.content;
         var parsed = parseAiJson(content);
-        if (!parsed) throw new Error('模型回應無法解析');
+        if (!parsed) {
+          /* 區分「輸出被截斷」同「格式錯」：finish_reason=length 即係 tag 內容太長被 cut */
+          if (choice && choice.finish_reason === 'length') {
+            throw new Error('模型回應被截斷（呢頁標記內容太長超出上限）。建議：改用 qwen/qwen3-vl-235b-a22b-instruct，或者影相時將頁面分兩張處理');
+          }
+          throw new Error('模型回應無法解析' +
+            (content ? '（模型開頭回應：' + String(content).replace(/\s+/g, ' ').slice(0, 80) + '…）' : '（模型冇輸出內容）'));
+        }
         var book_title = String(parsed.book_title || '').trim();
         var page = String(parsed.page || '').trim();
         var author = String(parsed.author || '').trim();
