@@ -125,14 +125,14 @@
     });
   }
 
-  /* 簡化壓縮（AI 直連冇 65K 限制，縮到 1280 就夠） */
+  /* 簡化壓縮（AI 直連冇 65K 限制，縮到 1920 保持細字清晰） */
   function compressImage(file) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () {
         try {
-          var scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+          var scale = Math.min(1, 1920 / Math.max(img.width, img.height));
           var w = Math.max(2, Math.round(img.width * scale));
           var h = Math.max(2, Math.round(img.height * scale));
           var c = document.createElement('canvas');

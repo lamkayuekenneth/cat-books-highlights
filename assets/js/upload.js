@@ -31,6 +31,8 @@
     'in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n' +
     'For each mark (highlighter or underline), copy only the characters that are actually marked (highlighted/underlined characters) as ONE tag; ' +
     'do not include unmarked surrounding characters, do not copy whole sentences/paragraphs, do not split, do not paraphrase, do not rewrite, do not translate, do not expand. ' +
+    'If a highlighter line or underline covers the characters, IGNORE the line color/stroke and read the actual character shapes beneath it — ' +
+    'compare with the same characters elsewhere on the page when unsure, and NEVER let the line turn a character into a different one. ' +
     'If the page has no highlights or underlines at all, tags MUST be an empty array []; never split ordinary page text into tags. ' +
     'Marks (highlighter + underline) are usually no more than 5; if you produce more than 10 tags it is likely a misdetection — reconsider and output only the truly marked text. ' +
     'The number of tags equals the number of marks.\n' +
@@ -42,7 +44,7 @@
     'Output ONLY one JSON object in exactly this format:\n' +
     '{"book_title": "書名", "page": "頁碼", "tags": ["標記字1", "標記字2"]}\n' +
     'Write an empty string if the book title or page number cannot be found. Do not output any other text, explanation, or markdown formatting.';
-  var USER_PROMPT = 'Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags.';
+  var USER_PROMPT = 'Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If a highlighter line or underline covers the characters, ignore the line color and read the real character shapes beneath it — never let the line change a character into a different one. If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags.';
 
   /* ---------- 書本庫：認書名＋作者用嘅 prompt（同 books.js 一致） ---------- */
   var BOOKS_SYSTEM_PROMPT =
@@ -208,13 +210,16 @@
     return canvas.toDataURL('image/' + pickFormat(), quality);
   }
 
-  function compressImage(file) {
+  function compressImage(file, opts) {
+    opts = opts || {};
+    var maxDim = opts.maxDim || MAX_DIM;
+    var maxB64 = opts.maxB64 || MAX_B64_LEN;
     return Promise.resolve().then(function () {
       return makeBitmap(file);
     }).then(function (source) {
       var isBitmap = !!(source && source.close);
       try {
-        var scale = Math.min(1, MAX_DIM / Math.max(source.width, source.height));
+        var scale = Math.min(1, maxDim / Math.max(source.width, source.height));
         var w = Math.max(1, Math.round(source.width * scale));
         var h = Math.max(1, Math.round(source.height * scale));
         var quality = pickFormat() === 'webp' ? WEBP_QUALITY : JPEG_QUALITY;
@@ -223,8 +228,8 @@
         var shrunk = false;
         var guard = 0;
         /* 自適應縮細：每次最多縮 30% 尺寸、品質 -0.05，直到符合 GitHub input 上限 */
-        while (base64.length > MAX_B64_LEN && guard < 8) {
-          var s = Math.max(0.7, Math.sqrt(MAX_B64_LEN / base64.length));
+        while (base64.length > maxB64 && guard < 8) {
+          var s = Math.max(0.7, Math.sqrt(maxB64 / base64.length));
           w = Math.max(MIN_DIM, Math.round(w * s));
           h = Math.max(MIN_DIM, Math.round(h * s));
           quality = Math.max(0.45, quality - 0.05);
@@ -717,7 +722,7 @@
     }
     card.status('AI 認緊書名＋作者…（直連，幾秒）');
     CB.aiBusy('AI 認緊書名＋作者…');
-    compressImage(file).then(function (compressed) {
+    compressImage(file, { maxDim: 1920, maxB64: 800000 }).then(function (compressed) {
       return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
     }).then(function (res) {
       CB.aiReady();
@@ -901,8 +906,12 @@
           : 'cb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));
         var card = new Card(file, id);
         queue.insertBefore(card.el, queue.firstChild);
-        return compressImage(file).then(function (compressed) {
-          if (compressed.base64.length > MAX_B64_LEN + 50000) {
+        var isDirect = !!CB.getOrKey();
+        /* 直連模式可以送大圖（豎排細字更清晰）；後備模式受 GitHub dispatch 65535 限制要壓細 */
+        var copts = isDirect ? { maxDim: 1920, maxB64: 800000 } : { maxDim: 1280, maxB64: MAX_B64_LEN };
+        var maxOk = isDirect ? 800000 + 50000 : MAX_B64_LEN + 50000;
+        return compressImage(file, copts).then(function (compressed) {
+          if (compressed.base64.length > maxOk) {
             throw new Error('相片太複雜，壓縮後仍然超出限制（請揀較清晰嘅書頁相）');
           }
           if (CB.getOrKey()) {

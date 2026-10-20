@@ -21,7 +21,7 @@
     'Write an empty string if the title or author cannot be identified. Do not output any other text, explanation, or markdown formatting.';
   var BOOKS_USER_PROMPT = 'Look at this photo and identify the book title and author (leave empty if you cannot identify them).';
 
-  var MAX_DIM = 1280;
+  var MAX_DIM = 1920;  /* 直連 AI 認書名：大圖保持細字清晰 */
   var WEBP_QUALITY = 0.75;
   var JPEG_QUALITY = 0.78;
   var IMG_FORMAT = null;
