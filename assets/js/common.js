@@ -177,22 +177,6 @@
       });
     },
 
-    /* dispatch GitHub Actions workflow（repository_dispatch：client_payload 上限 65,535 bytes；
-       前端預檢長度，避免直接食 GitHub 422 錯誤） */
-    dispatchWorkflow: function (fileName, inputs) {
-      var r = this.requireRepo();
-      var payload = JSON.stringify({ event_type: 'analyze', client_payload: inputs });
-      if (payload.length > 64000) {
-        return Promise.reject(new Error(
-          '後備模式限制 64KB：圖片壓縮後仍然太大（' + payload.length + ' bytes）。' +
-          '建議喺設定頁加入 OpenRouter key 用直連模式（冇 64KB 限制），或者影低解像度啲嘅相片。'));
-      }
-      return this.gh('/repos/' + r.owner + '/' + r.repo + '/dispatches', {
-        method: 'POST',
-        body: payload
-      });
-    },
-
     /* AI 分析／寫入全屏 loading 遮罩：顯示期間用戶唔可以操作 UI（計數器版） */
     aiBusy: function (msg) {
       _aiBusyCount++;

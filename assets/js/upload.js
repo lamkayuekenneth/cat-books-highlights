@@ -1,19 +1,15 @@
 /* ============================================================
-   CatBookmark — 上傳頁：揀相 → 壓縮 → dispatch GitHub Actions
-   → 輪詢 AI 結果 → 可編輯標籤 → 儲存入 books.json
+   CatBookmark — 上傳頁：揀相 → 壓縮 → 直連 OpenRouter AI
+   分析 → 可編輯標籤 → 儲存入 books.json
    ============================================================ */
 (function () {
   'use strict';
 
-  var MAX_DIM = 1280;        /* 壓縮後最長邊 */
+  var MAX_DIM = 1920;       /* 直連壓縮最長邊（豎排細字保持清晰） */
   var JPEG_QUALITY = 0.78;
   var WEBP_QUALITY = 0.75;
-  /* GitHub 對 workflow_dispatch inputs 同 repository_dispatch client_payload 嘅上限都係 65,535 字元；
-     圖片 base64 目標 ≤60,000 字元。用 WebP（瀏覽器支援時）喺同一預算下解像度高出約 40%，細字更易讀 */
-  var MAX_B64_LEN = 60000;
-  var MIN_DIM = 480;         /* 縮細下限，太細就冇辦法讀到書名 */
-  var POLL_INTERVAL = 5000;  /* ms */
-  var POLL_MAX = 72;         /* 約 6 分鐘 */
+  var MAX_B64_LEN = 800000; /* 直連模式冇 64KB 限制，但避免 payload 過大 */
+  var MIN_DIM = 480;        /* 縮細下限，太細就冇辦法讀到書名 */
 
   /* ---------- 直連 OpenRouter 用嘅 prompt（同 analyze.py 一致） ---------- */
   var SYSTEM_PROMPT =
@@ -66,7 +62,7 @@
     });
   }
 
-  /* ---------- 直連模式提示 banner：未啟用直連就話畀用戶知 ---------- */
+  /* ---------- 未有 API Key 提示 banner ---------- */
   (function showModeBanner() {
     var banner = document.getElementById('mode-banner');
     var text = document.getElementById('mode-banner-text');
@@ -77,9 +73,8 @@
     }
     banner.hidden = false;
     banner.className = 'mode-banner warn';
-    text.innerHTML = '⏳ 你而家用緊 <b>GitHub Actions 後備模式</b>（約 1–2 分鐘先有結果）。' +
-      '去 <a href="settings.html" style="color:inherit;text-decoration:underline;">⚙️ 設定</a> 嘅「🚀 瀏覽器直連」貼你嘅 OpenRouter API Key 一次，' +
-      '之後上傳就 <b>幾秒</b>出結果。';
+    text.innerHTML = '⚠️ 未設定 AI API Key：去 <a href="settings.html" style="color:inherit;text-decoration:underline;">⚙️ 設定</a> 嘅「🤖 AI 模型設定」貼你嘅 OpenRouter API Key（＋Base URL＋Model），' +
+      '撳「測試 Model」確認連線成功，先可以上傳分析。';
   })();
 
   var dz = document.getElementById('dropzone');
@@ -305,29 +300,10 @@
     });
   }
 
-  /* ---------- 輪詢 pending 結果檔（GitHub Actions 後備模式） ---------- */
-  function pollPending(id) {
-    var attempts = 0;
-    function tick() {
-      attempts += 1;
-      /* 用 Contents API 讀（冇 raw CDN 延遲），workflow 一 commit 即刻睇到 */
-      return CB.freshText('data/pending/' + id + '.json').then(function (text) {
-        return JSON.parse(text);
-      }).catch(function () {
-        if (attempts >= POLL_MAX) {
-          throw new Error('分析逾時（約 6 分鐘）。請到 GitHub > Actions 睇下 run 狀態，或者考慮喺設定頁啟用「瀏覽器直連」。');
-        }
-        return sleep(POLL_INTERVAL).then(tick);
-      });
-    }
-    return tick();
-  }
-
   /* ---------- 卡片 ---------- */
   function Card(file, id) {
     this.id = id;
     this._saved = false;
-    this._direct = false;   /* 直連模式：冇 pending 檔，儲存/捨棄唔使刪檔 */
     this._previewUrl = null;
     var card = this;
 
@@ -849,10 +825,6 @@
         return CB.writeFile('data/books.json', JSON.stringify(rows, null, 2) + '\n', '新增書目：' + title);
       });
     }).then(function () {
-      if (card._direct) return null; /* 直連模式冇 pending 檔 */
-      return CB.deleteFile('data/pending/' + card.id + '.json')
-        .catch(function () { return null; });
-    }).then(function () {
       card._saved = true;
       if (card._previewUrl) {
         URL.revokeObjectURL(card._previewUrl);
@@ -875,11 +847,7 @@
   };
 
   Card.prototype.discard = function () {
-    var card = this;
-    if (card._direct) { card.remove(); return; }
-    CB.deleteFile('data/pending/' + card.id + '.json').catch(function () { return null; }).then(function () {
-      card.remove();
-    });
+    this.remove();
   };
 
   Card.prototype.remove = function () {
@@ -888,20 +856,6 @@
   };
 
   /* ---------- 主流程 ---------- */
-  function runActionsPath(id, card, compressed) {
-    card.status(compressed.shrunk ? 'AI 分析緊…（已自動壓縮）' : 'AI 分析緊…');
-    return CB.dispatchWorkflow('analyze.yml', {
-      image_base64: compressed.base64,
-      image_id: id
-    }).then(function () {
-      card.status('等緊分析結果…');
-      return pollPending(id);
-    }).then(function (result) {
-      if (result && result.error) card.showError(result.error);
-      else card.setResult(result || { book_title: '', tags: [] });
-    });
-  }
-
   /* 手機相片：iOS 相機可能係 HEIC/HEIF，一啲 Android 揀檔器連 MIME type 都唔填（空字串）——
      唔可以淨係靠 f.type 過濾，否則揀完相「冇反應」 */
   function isImageFile(f) {
@@ -916,22 +870,21 @@
       showBanner('⚠ 請揀相片檔案（HEIC／JPEG／PNG 都支援）', 'warn');
       return toast('請揀相片檔案', 'warn');
     }
-    var pat = CB.getPat();
     var orKey = CB.getOrKey();
+    if (!orKey) {
+      showBanner(
+        '🚫 未設定 AI API Key：AI 分析需要佢。<br>' +
+        '請去 <a href="settings.html">⚙️ 設定</a> →「🤖 AI 模型設定」貼你嘅 OpenRouter API Key，撳「測試 Model」確認成功先可以上傳。',
+        'error');
+      return toast('未設定 AI API Key：去設定頁填入先', 'error');
+    }
+    var pat = CB.getPat();
     var repoOk = true;
     try { CB.requireRepo(); } catch (e) { repoOk = false; }
-    if (!pat && !orKey) {
-      /* 最常見「揀完相冇反應」：手機 localStorage 係空（唔會同電腦同步） */
+    if (!pat) {
+      /* AI 分析唔使 PAT 照行，但儲存到 books.json 需要 PAT */
       showBanner(
-        '🚫 未設定 GitHub Token：AI 分析同儲存都需要佢。<br>' +
-        '請去 <a href="settings.html">⚙️ 設定</a> 貼你嘅 GitHub Token，或啟用「🚀 瀏覽器直連」貼 OpenRouter Key（幾秒出結果）。',
-        'error');
-      return toast('未設定 GitHub Token：去設定頁填入先', 'error');
-    }
-    if (!pat && orKey) {
-      /* 直連模式：AI 分析唔使 PAT 照行，但儲存到 books.json 需要 PAT */
-      showBanner(
-        '⚠ 未有 GitHub Token：AI 分析會用「🚀 瀏覽器直連」照行，但<b>儲存到 books.json 需要 Token</b>——' +
+        '⚠ 未有 GitHub Token：AI 分析照行，但<b>儲存到 books.json 需要 Token</b>——' +
         '請去 <a href="settings.html">⚙️ 設定</a> 補填，分析完先至撳「儲存」。', 'warn');
     } else if (!repoOk) {
       showBanner('⚠ 未有 GitHub Owner / Repo：請去 <a href="settings.html">⚙️ 設定</a> 填返（GitHub Pages 打開會自動偵測）。', 'warn');
@@ -947,31 +900,15 @@
           : 'cb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));
         var card = new Card(file, id);
         queue.insertBefore(card.el, queue.firstChild);
-        var isDirect = !!CB.getOrKey();
-        /* 直連模式可以送大圖（豎排細字更清晰）；後備模式受 GitHub dispatch 64KB 限制要壓細 */
-        var copts = isDirect
-          ? { maxDim: 1920, maxB64: 800000, minDim: 480 }
-          : { maxDim: 1280, maxB64: 55000, minDim: 320 };
-        var maxOk = isDirect ? 800000 + 50000 : 58000;
-        return compressImage(file, copts).then(function (compressed) {
-          if (compressed.base64.length > maxOk) {
+        /* 直連模式：1920px 大圖（豎排細字清晰），冇 64KB 限制 */
+        return compressImage(file, { maxDim: 1920, maxB64: MAX_B64_LEN, minDim: MIN_DIM }).then(function (compressed) {
+          if (compressed.base64.length > MAX_B64_LEN + 50000) {
             throw new Error('相片太複雜，壓縮後仍然超出限制（請揀較清晰嘅書頁相）');
           }
-          if (CB.getOrKey()) {
-            /* 直連模式：瀏覽器直接 call OpenRouter，幾秒出結果，相片唔會離開部機 */
-            card._direct = true;
-            card.status(compressed.shrunk ? 'AI 分析緊…（直連，幾秒）' : 'AI 分析緊…（直連，幾秒）');
-            return directAnalyze(compressed.dataUrl).then(function (result) {
-              card.setResult(result);
-            }).catch(function (err) {
-              card._direct = false;
-              card.status('直連失敗，自動改用 GitHub Actions…');
-              toast('直連失敗（' + (err.message || err) + '），改用後備模式', 'warn');
-              return runActionsPath(id, card, compressed);
-            });
-          }
-          /* 後備模式：GitHub Actions */
-          return runActionsPath(id, card, compressed);
+          card.status(compressed.shrunk ? 'AI 分析緊…（直連，幾秒）' : 'AI 分析緊…（直連，幾秒）');
+          return directAnalyze(compressed.dataUrl).then(function (result) {
+            card.setResult(result);
+          });
         }).catch(function (err) {
           card.showError(err.message || '分析失敗');
         });

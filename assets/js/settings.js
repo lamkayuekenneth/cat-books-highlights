@@ -1,6 +1,6 @@
 /* ============================================================
-   CatBookmark — 設定頁：GitHub 連線、AI model/base_url、
-   OpenRouter API Key（加密寫入 GitHub Actions secret）
+   CatBookmark — 設定頁：GitHub 連線、AI model / base_url /
+   OpenRouter API Key（瀏覽器直連，唯一通道）
    ============================================================ */
 (function () {
   'use strict';
@@ -18,13 +18,7 @@
   var testAiBtn = document.getElementById('test-ai');
   var aiTestStatus = document.getElementById('ai-test-status');
 
-  var apiKeyInput = document.getElementById('api-key');
-  var saveKeyBtn = document.getElementById('save-key');
-  var keyStatus = document.getElementById('key-status');
-  var secretState = document.getElementById('secret-state');
-
   var orKeyInput = document.getElementById('orkey');
-  var enableOrBtn = document.getElementById('enable-orkey');
   var orKeyStatus = document.getElementById('orkey-status');
 
   /* ---------- 初始值 ---------- */
@@ -70,13 +64,13 @@
     }
     set('ls-pat', pat
       ? '✓ 已設定（尾 4 位：…' + esc(pat.slice(-4)) + '）'
-      : '✗ 未設定（上傳分析＋儲存都需要）', pat ? 'ok' : 'warn');
+      : '✗ 未設定（儲存到 books.json 需要）', pat ? 'ok' : 'warn');
     set('ls-repo', (c.owner && c.repo)
       ? '✓ ' + esc(c.owner) + ' / ' + esc(c.repo)
       : '✗ 未設定（喺 GitHub Pages 打開會自動偵測）', (c.owner && c.repo) ? 'ok' : 'warn');
     set('ls-orkey', orKey
-      ? '✓ 已啟用（尾 4 位：…' + esc(orKey.slice(-4)) + '，幾秒出結果）'
-      : '✗ 未設定（用緊 GitHub Actions 後備，約 1–2 分鐘）', orKey ? 'ok' : 'warn');
+      ? '✓ 已設定（尾 4 位：…' + esc(orKey.slice(-4)) + '，上傳即時分析）'
+      : '✗ 未設定（上傳頁會提示你去 AI 模型設定填入）', orKey ? 'ok' : 'warn');
     set('ls-model', esc(ai.model || '—'));
     set('ls-base', esc(ai.baseUrl || '—'));
   }
@@ -115,6 +109,13 @@
       return toast('⚠️ 打錯喇：Qwen 視覺 model 係 vl（字母 V-L），唔係 v1（V-1）。例：qwen/qwen3-vl-235b-a22b-instruct', 'warn');
     }
     if (baseUrlInput.value.trim() !== baseUrl) baseUrlInput.value = baseUrl; /* 即場修正輸入框 */
+    /* 有填 Key 就一併儲存（AI 設定合併咗 Key 輸入） */
+    var newKey = orKeyInput.value.trim();
+    if (newKey) {
+      CB.setOrKey(newKey);
+      orKeyInput.value = '';
+      refreshOrKeyState();
+    }
     saveAiBtn.disabled = true;
     aiStatus.className = 'status';
     aiStatus.textContent = '儲存緊…';
@@ -122,9 +123,11 @@
       JSON.stringify({ model: model, base_url: baseUrl }, null, 2) + '\n',
       '更新 AI 設定（model / base url）')
       .then(function () {
-        CB.setAiCache(model, baseUrl); /* 直連模式用嘅瀏覽器快取 */
+        CB.setAiCache(model, baseUrl); /* 瀏覽器快取（上傳頁用） */
         aiStatus.className = 'status ok';
-        aiStatus.textContent = '✓ 已寫入 config/settings.json，同時記低喺瀏覽器（直連用）';
+        aiStatus.textContent = newKey
+          ? '✓ 已寫入 config/settings.json ＋ API Key 已記低喺瀏覽器'
+          : '✓ 已寫入 config/settings.json ＋ 記低喺瀏覽器';
         toast('AI 設定已儲存 ✓', 'ok');
       })
       .catch(function (err) {
@@ -156,13 +159,13 @@
     if (/qwen3-v1-/i.test(model)) {
       return toast('⚠️ 打錯喇：Qwen 視覺 model 係 vl（字母 V-L），唔係 v1（V-1）。例：qwen/qwen3-vl-235b-a22b-instruct', 'warn');
     }
-    /* Key 優先取直連（localStorage），未啟用就試後備輸入框 */
-    var key = CB.getOrKey() || apiKeyInput.value.trim();
+    /* Key 取「AI 模型設定」入面嘅輸入框；未填就取已儲存（localStorage）嗰個 */
+    var key = orKeyInput.value.trim() || CB.getOrKey();
     if (!key) {
       clearBanner();
       showBanner(
-        '🚫 未有 Key 可測試：呢啲設定係<b>跟裝置＋瀏覽器儲存</b>，你要喺<b>呢部手機／呢個瀏覽器</b>填先至有。<br>' +
-        '請喺「🚀 瀏覽器直連」貼 OpenRouter Key 後撳「啟用直連」，或者喺「🔑 API Key」輸入框填一個再試。',
+        '🚫 未有 Key 可測試：喺上面「OpenRouter API Key」貼你嘅 Key（<code>sk-or-…</code>）再撳「測試 Model」，' +
+        '測試會用 <b>Key ＋ Base URL ＋ Model</b> 一併驗證連線。',
         'error');
       aiTestStatus.className = 'status error';
       aiTestStatus.textContent = '✗ 未有 Key 可測試（睇頁頂紅色提示）';
@@ -205,6 +208,7 @@
           throw new Error(msg + '（' + secs + ' 秒）');
         }
         var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        storeOrKeyFromInput(); /* 測試通過＝Key 有效，順手儲存 */
         aiTestStatus.className = 'status ok';
         aiTestStatus.textContent = '✓ 回應正常（' + model + '，' + secs + ' 秒）：' +
           (content ? String(content).trim().replace(/\s+/g, ' ').slice(0, 60) : '（無內容）');
@@ -225,151 +229,27 @@
     });
   });
 
-  /* ---------- 瀏覽器直連 Key（localStorage） ---------- */
+  /* ---------- OpenRouter API Key（localStorage，唯一通道） ---------- */
   function refreshOrKeyState() {
     var k = CB.getOrKey();
     if (k) {
       orKeyStatus.className = 'status ok';
-      orKeyStatus.textContent = '✓ 直連已啟用（Key 尾 4 位：…' + k.slice(-4) + '）。上傳相片會直接 call OpenRouter，幾秒出結果。';
+      orKeyStatus.textContent = '✓ API Key 已設定（尾 4 位：…' + k.slice(-4) + '）。上傳相片會直接 call OpenRouter，幾秒出結果。';
     } else {
       orKeyStatus.className = 'status warn';
-      orKeyStatus.textContent = '尚未啟用直連：填入 Key 後按「啟用直連」；否則用 GitHub Actions 後備模式（約 1–2 分鐘）。';
+      orKeyStatus.textContent = '尚未設定 API Key：貼入上面輸入框後撳「儲存 AI 設定」，或直接用「測試 Model」驗證連線。';
     }
   }
-  enableOrBtn.addEventListener('click', function () {
-    var key = orKeyInput.value.trim();
-    if (!key) return toast('請輸入 OpenRouter API Key', 'warn');
-    CB.setOrKey(key);
-    orKeyInput.value = '';
-    refreshOrKeyState();
-    toast('✓ 直連已啟用（幾秒出結果）', 'ok');
-  });
   refreshOrKeyState();
 
-  /* ---------- API Key → GitHub Actions secret（後備模式） ---------- */
-  var sodiumPromise = null;
-  function loadScript(src) {
-    return new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = function () { reject(new Error('載入失敗：' + src)); };
-      document.head.appendChild(s);
-    });
-  }
-  function sodiumReady() {
-    if (!sodiumPromise) {
-      /* 優先本地檔案（隨 repo 分發，離線可用）；失敗先至試 CDN */
-      var candidates = [
-        ['assets/js/libsodium.js', 'assets/js/libsodium-wrappers.js'],
-        ['https://cdn.jsdelivr.net/npm/libsodium@0.7.15/dist/modules/libsodium.js',
-         'https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/modules/libsodium-wrappers.js']
-      ];
-      function tryAt(i) {
-        if (i >= candidates.length) {
-          return Promise.reject(new Error('無法載入加密庫（libsodium CDN 唔通）'));
-        }
-        var pair = candidates[i];
-        return loadScript(pair[0]).then(function () { return loadScript(pair[1]); })
-          .then(function () {
-            if (!window.sodium) throw new Error('sodium 未初始化');
-            return window.sodium.ready.then(function () { return window.sodium; });
-          })
-          .catch(function () { return tryAt(i + 1); });
-      }
-      sodiumPromise = tryAt(0);
-    }
-    return sodiumPromise;
+  /* 「測試 Model」成功時順手儲存 Key（用戶貼咗新 Key 測試，即代表想用） */
+  function storeOrKeyFromInput() {
+    var k = orKeyInput.value.trim();
+    if (!k) return;
+    CB.setOrKey(k);
+    orKeyInput.value = '';
+    refreshOrKeyState();
   }
 
-  saveKeyBtn.addEventListener('click', function () {
-    saveConn();
-    var key = apiKeyInput.value.trim();
-    if (!key) return toast('請輸入 OpenRouter API Key', 'warn');
-    saveKeyBtn.disabled = true;
-    keyStatus.className = 'status';
-    keyStatus.textContent = '加密緊同寫入緊…';
-    var r = CB.getOwnerRepo();
-    CB.gh('/repos/' + r.owner + '/' + r.repo + '/actions/secrets/public-key')
-      .then(function (pub) {
-        return sodiumReady().then(function (sodium) {
-          var pk = sodium.from_base64(pub.key, sodium.base64_variants.ORIGINAL);
-          return sodium.to_base64(
-            sodium.crypto_box_seal(sodium.from_string(key), pk),
-            sodium.base64_variants.ORIGINAL);
-        }).then(function (sealed) {
-          return CB.gh('/repos/' + r.owner + '/' + r.repo + '/actions/secrets/OPENROUTER_API_KEY', {
-            method: 'PUT',
-            body: JSON.stringify({ encrypted_value: sealed, key_id: pub.key_id })
-          });
-        });
-      })
-      .then(function () {
-        apiKeyInput.value = '';
-        keyStatus.className = 'status ok';
-        keyStatus.textContent = '✓ API Key 已加密寫入 GitHub Actions secret（OPENROUTER_API_KEY），唔會存入 repository';
-        toast('API Key 已寫入 Secret ✓', 'ok');
-        refreshSecretState();
-      })
-      .catch(function (err) {
-        keyStatus.className = 'status error';
-        keyStatus.textContent = '✗ ' + err.message +
-          '。替代方法：GitHub → Settings → Secrets and variables → Actions → New repository secret → 名稱 OPENROUTER_API_KEY';
-        toast('API Key 設定失敗，請睇提示', 'error');
-      })
-      .then(function () { saveKeyBtn.disabled = false; });
-  });
-
-  /* ---------- 驗證 OpenRouter Key（直接 call OpenRouter /api/v1/key） ---------- */
-  var verifyKeyBtn = document.getElementById('verify-key');
-  var keyVerifyStatus = document.getElementById('key-verify-status');
-  verifyKeyBtn.addEventListener('click', function () {
-    var key = apiKeyInput.value.trim();
-    if (!key) return toast('請先喺上面輸入 API Key', 'warn');
-    verifyKeyBtn.disabled = true;
-    keyVerifyStatus.className = 'status';
-    keyVerifyStatus.textContent = '驗證緊…（call OpenRouter）';
-    fetch('https://openrouter.ai/api/v1/key', {
-      headers: { Authorization: 'Bearer ' + key }
-    }).then(function (res) {
-      if (res.ok) {
-        return res.json().then(function (info) {
-          keyVerifyStatus.className = 'status ok';
-          var label = (info && info.data && info.data.label) ? '（' + info.data.label + '）' : '';
-          keyVerifyStatus.textContent = '✓ Key 有效' + label + '，可以放心儲存';
-          toast('✓ OpenRouter Key 有效', 'ok');
-        });
-      }
-      return res.json().catch(function () { return null; }).then(function (j) {
-        var msg = (j && j.error && j.error.message) ? j.error.message : ('HTTP ' + res.status);
-        keyVerifyStatus.className = 'status error';
-        keyVerifyStatus.textContent = '✗ Key 無效：' + msg + '。請去 openrouter.ai/settings/keys 複製正確嘅 key';
-        toast('✗ Key 無效', 'error');
-      });
-    }).catch(function (err) {
-      keyVerifyStatus.className = 'status error';
-      keyVerifyStatus.textContent = '✗ 驗證失敗（' + err.message + '），可能係網絡問題';
-    }).then(function () { verifyKeyBtn.disabled = false; });
-  });
-
-  function refreshSecretState() {
-    secretState.className = 'status';
-    secretState.textContent = '檢查緊…';
-    var r = CB.getOwnerRepo();
-    CB.gh('/repos/' + r.owner + '/' + r.repo + '/actions/secrets')
-      .then(function (data) {
-        var has = (data.secrets || []).some(function (s) { return s.name === 'OPENROUTER_API_KEY'; });
-        secretState.className = 'status ' + (has ? 'ok' : 'warn');
-        secretState.textContent = has
-          ? '✓ OPENROUTER_API_KEY 已設定'
-          : '尚未設定 OPENROUTER_API_KEY（可用上方表單，或去 GitHub UI 手動加）';
-      })
-      .catch(function (err) {
-        secretState.className = 'status warn';
-        secretState.textContent = '未能讀取 secret 狀態（' + err.message +
-          '）。如果 Token 冇 Secrets 權限，可直接去 GitHub UI 新增 OPENROUTER_API_KEY。';
-      });
-  }
-  refreshSecretState();
   window.__CB_SETTINGS_LOADED = true; /* 畀 settings.html 嘅載入檢查用 */
 })();

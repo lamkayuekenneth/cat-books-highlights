@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="CatBookmark 貓書籤 — 設定：GitHub 連線、AI 模型、OpenRouter API Key">
   <title>CatBookmark 貓書籤 · 設定</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261053">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261054">
 </head>
 <body class="page-settings">
   <header class="topbar">
@@ -23,7 +23,7 @@
 
   <main class="container">
     <div class="page-banner" id="page-banner" hidden></div>
-    <p class="version-tag">版本 <span id="app-version">20261023</span>（如果呢度同「測試 Model」掣唔夾，就係瀏覽器 cache 舊版：硬刷新一次）</p>
+    <p class="version-tag">版本 <span id="app-version">20261054</span>（如果呢度同「測試 Model」掣唔夾，就係瀏覽器 cache 舊版：硬刷新一次）</p>
     <div class="settings-grid">
     <section class="card">
       <h2 class="section-title">💾 瀏覽器儲存狀態（localStorage）</h2>
@@ -32,7 +32,7 @@
         <tbody>
           <tr><th>GitHub Token（PAT）</th><td id="ls-pat" class="warn">—</td></tr>
           <tr><th>GitHub Owner / Repo</th><td id="ls-repo" class="warn">—</td></tr>
-          <tr><th>OpenRouter Key（直連）</th><td id="ls-orkey" class="warn">—</td></tr>
+          <tr><th>OpenRouter API Key</th><td id="ls-orkey" class="warn">—</td></tr>
           <tr><th>AI Model</th><td id="ls-model">—</td></tr>
           <tr><th>Base URL</th><td id="ls-base">—</td></tr>
         </tbody>
@@ -52,7 +52,7 @@
       <div class="field">
         <label class="field-label" for="pat">GitHub Token（PAT）</label>
         <input id="pat" type="password" placeholder="github_pat_… / ghp_…" autocomplete="off">
-        <p class="hint">Token 只會儲存喺你瀏覽器嘅 <code>localStorage</code>，用嚟 dispatch workflow、讀寫 JSON 同更新 secret。需要權限：<strong>Actions（讀寫）</strong>、<strong>Contents（讀寫）</strong>、<strong>Secrets（讀寫，可選）</strong>、<strong>Metadata（讀）</strong>。</p>
+        <p class="hint">Token 只會儲存喺你瀏覽器嘅 <code>localStorage</code>，用嚟讀寫 <code>data/books.json</code> 等檔案。需要權限：<strong>Contents（讀寫）</strong>、<strong>Metadata（讀）</strong>。</p>
       </div>
       <div class="card-actions">
         <button class="btn btn-primary" id="test-conn" type="button">測試連線</button>
@@ -62,6 +62,15 @@
 
     <section class="card">
       <h2 class="section-title">🤖 AI 模型設定</h2>
+      <div class="field">
+        <label class="field-label" for="orkey">OpenRouter API Key</label>
+        <input id="orkey" type="password" placeholder="sk-or-…" autocomplete="off">
+        <p class="hint">
+          <strong>必需</strong>：相片上傳後由你嘅瀏覽器<b>直接 call OpenRouter</b>（幾秒出結果），
+          相片完全唔會離開你部機。<br>
+          Key 只會儲存喺<b>你瀏覽器嘅 localStorage</b>，唔會入 repository。
+        </p>
+      </div>
       <div class="field">
         <label class="field-label" for="model">Model（OpenRouter model ID）</label>
         <input id="model" type="text" list="model-list" placeholder="qwen/qwen3-vl-8b-instruct" autocomplete="off">
@@ -75,7 +84,6 @@
           <option value="qwen/qwen2.5-vl-72b-instruct">
         </datalist>
         <p class="hint">
-          🚀 直連模式（幾秒出結果）同 Actions 後備模式都用呢個 model。<br>
           🏆 最穩（實測豎排螢光筆字全中）：<code>qwen/qwen3-vl-235b-a22b-instruct</code>；⚡ 最快：<code>qwen/qwen3-vl-8b-instruct</code>（快但有時錯字）。<br>
           ⚠️ Qwen 視覺 model 係 <code>vl</code>（字母 V-L），唔係 <code>v1</code>（V-1）；打錯會「not a valid model ID」。<br>
           ❌ <code>moondream*</code> 太弱讀唔到細字；❌ <code>openai/gpt-4o-mini</code>、<code>google/gemini-*</code> 對「書頁文字」有 ToS 審查（403）。
@@ -87,62 +95,22 @@
         <p class="hint">支援任何 OpenAI 兼容嘅 <code>/chat/completions</code> 端點。<br>
           ⚠️ 只需填到 <code>…/api/v1</code> 就夠，<b>唔好連 <code>/chat/completions</code> 都填埋</b>（系統會自動補上；填埋會變 404）。</p>
       </div>
-      <p class="hint">儲存後會寫入 repository 入面嘅 <code>config/settings.json</code>，同時記低喺你瀏覽器（直連模式用）。<br>
-        測試用嘅 Key 會優先取「🚀 瀏覽器直連」嗰個；未啟用就試「🔑 API Key」輸入框。測試只驗證連線同延遲，唔代表書頁 OCR 一定得（某啲 model 對書頁圖有 ToS 限制）。</p>
+      <p class="hint">「儲存 AI 設定」會寫入 repo 嘅 <code>config/settings.json</code>（model／base URL）＋記低喺瀏覽器（Key 淨係記喺瀏覽器）。<br>
+        「測試 Model」會用<b>輸入緊嘅 Key ＋ Base URL ＋ Model</b> 一併實際 call 一次驗證連線（20 秒內有回應先算過）。</p>
       <div class="card-actions">
         <button class="btn btn-primary" id="save-ai" type="button">儲存 AI 設定</button>
-        <button class="btn btn-ghost" id="test-ai" type="button">測試 Model</button>
+        <button class="btn btn-ghost" id="test-ai" type="button">測試 Model（Key＋Base URL＋Model）</button>
       </div>
       <p class="status" id="ai-status"></p>
       <p class="status" id="ai-test-status"></p>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title">🚀 瀏覽器直連（最快：幾秒出結果）</h2>
-      <div class="field">
-        <label class="field-label" for="orkey">OpenRouter API Key（直連用）</label>
-        <input id="orkey" type="password" placeholder="sk-or-…" autocomplete="off">
-        <p class="hint">
-          <strong>啟用之後</strong>：相片上傳後會由你嘅瀏覽器<b>直接 call OpenRouter</b>，
-          唔經 GitHub Actions，<b>幾秒</b>就出到 AI 結果；相片完全唔會離開你部機。<br>
-          Key 只會儲存喺<b>你瀏覽器嘅 localStorage</b>（同你個 GitHub Token 一樣），
-          唔會入 repository。<br>
-          如果冇填呢個 Key（或直連失敗），會自動用返 GitHub Actions 後備模式（約 1–2 分鐘）。
-        </p>
-      </div>
-      <div class="card-actions">
-        <button class="btn btn-primary" id="enable-orkey" type="button">啟用直連</button>
-      </div>
       <p class="status" id="orkey-status"></p>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title">🔑 OpenRouter API Key（GitHub Actions 後備用）</h2>
-      <div class="field">
-        <label class="field-label" for="api-key">API Key</label>
-        <input id="api-key" type="password" placeholder="sk-or-…" autocomplete="off">
-        <p class="hint">
-          呢個係<b>後備模式</b>用：如果冇啟用瀏覽器直連，就會用 GitHub Actions 分析，呢個 Key 會用
-          GitHub Secrets API 加密寫入 <code>OPENROUTER_API_KEY</code> Actions secret（唔會入 repository）。<br>
-          如果 Token 冇 Secrets 權限，可直接去
-          <code>GitHub → Settings → Secrets and variables → Actions</code> 新增
-          <code>OPENROUTER_API_KEY</code>。
-        </p>
-      </div>
-      <div class="card-actions">
-        <button class="btn btn-primary" id="save-key" type="button">儲存 API Key（後備）</button>
-        <button class="btn btn-ghost" id="verify-key" type="button">驗證 Key</button>
-      </div>
-      <p class="status" id="key-status"></p>
-      <p class="status" id="key-verify-status"></p>
-      <p class="status" id="secret-state"></p>
     </section>
   </main>
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="assets/js/common.js?v=20261053"></script>
-  <script src="assets/js/settings.js?v=20261053"></script>
+  <script src="assets/js/common.js?v=20261054"></script>
+  <script src="assets/js/settings.js?v=20261054"></script>
   <script>
     /* 安全網：如果 settings.js 冇載到（舊 cache），2.5 秒後出橫幅叫人硬刷新 */
     setTimeout(function () {
