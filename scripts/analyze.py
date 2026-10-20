@@ -35,18 +35,18 @@ SYSTEM_PROMPT = (
     "Your ONLY job:\n"
     "1. Extract the characters marked with a highlighter (any color; includes text enclosed in a colored box/frame) — INCLUDE the punctuation of the marked text.\n"
     "2. Extract the characters underlined with any pen, pencil or highlighter — INCLUDE the punctuation of the marked text.\n"
-    "Each continuous marked run becomes exactly ONE tag. Only clear, continuous marks count: a solid color block covering characters, a complete colored box/frame around characters, or a line drawn over the characters (horizontal book: line below the characters; vertical book: line on the left side of the characters).\n"
+    "Combine ALL marked characters (every highlight AND every underline, including their punctuation) into ONE single tag. "
+    "Do NOT split them into multiple tags — the user will split and organize the tags themselves later.\n"
     "Do NOT include unmarked text. Do NOT paraphrase, summarize, translate, expand or rewrite — copy the marked characters exactly as printed.\n"
     "If a mark covers a character, read the real character shape beneath it — the mark never changes the character.\n"
     "Do NOT count faint color noise, paper shadows, stains, color bleeding from an adjacent mark, or isolated dots as marks.\n"
-    "If the same continuous marked text spans multiple columns, merge the columns into ONE tag.\n"
     "If there are no marks, tags MUST be [].\n"
     "Also return the book title printed on the page (in the header/footer; chapter titles do not count — write an empty string if none) and the printed page number (digits only — write an empty string if none).\n"
     "Output ONLY one JSON object, no other text, in exactly this format:\n"
-    '{"book_title": "書名", "page": "頁碼", "tags": ["標記字1", "標記字2"]}'
+    '{"book_title": "書名", "page": "頁碼", "tags": ["所有標記字（合併一個 tag）"]}'
 )
 
-USER_PROMPT = "Extract ONLY the highlighted or underlined characters (including their punctuation) from this book page — one tag per continuous mark. Also include the printed book title (empty string if none; chapter titles do not count) and the printed page number (digits only; empty string if none). If there are no marks, tags = []. Return JSON only in the format {\"book_title\": \"...\", \"page\": \"...\", \"tags\": [\"...\"]}."
+USER_PROMPT = "Extract ALL highlighted or underlined characters (including their punctuation) from this book page and combine them into ONE single tag (every highlight AND every underline together). Do NOT split into multiple tags. Also include the printed book title (empty string if none; chapter titles do not count) and the printed page number (digits only; empty string if none). If there are no marks, tags = []. Return JSON only in the format {\"book_title\": \"...\", \"page\": \"...\", \"tags\": [\"...\"]}."
 
 
 def write_result(image_id, result):
