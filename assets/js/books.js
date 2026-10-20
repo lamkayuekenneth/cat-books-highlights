@@ -12,14 +12,14 @@
 
   /* ---------- AI：認書名＋作者（書本庫用） ---------- */
   var BOOKS_SYSTEM_PROMPT =
-    '你係一個協助整理書目資料嘅助手。用戶影咗一本書嘅相片（通常係封面、書脊或版權頁，亦可能係內頁）。\n' +
-    '請認出兩樣嘢：\n' +
-    '1. 書名：書上印嘅書名（封面最突出嘅標題，或者版權頁嘅書名）。認唔到就寫空字串，唔好亂估。\n' +
-    '2. 作者：書上印嘅作者名（通常喺「著／作者／撰／by」附近，或者封面署名）。認唔到就寫空字串，唔好亂估。\n' +
-    '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
+    'You are an assistant that helps organize book catalog data. The user photographed a book (usually the cover, spine, or copyright page, sometimes an inner page).\n' +
+    'Please identify two things:\n' +
+    '1. Book title: the title printed on the book (the most prominent title on the cover, or the title on the copyright page). If you cannot identify it, write an empty string — do not guess.\n' +
+    '2. Author: the author name printed on the book (usually near "著/作者/撰/by", or the signature on the cover). If you cannot identify it, write an empty string — do not guess.\n' +
+    'Output ONLY one JSON object in exactly this format:\n' +
     '{"book_title": "書名", "author": "作者"}\n' +
-    '書名或作者認唔到就寫空字串。唔好輸出任何其他文字、解釋或者 markdown 標記。';
-  var BOOKS_USER_PROMPT = '請睇吓呢張相：認出書名同作者（認唔到就留空）。';
+    'Write an empty string if the title or author cannot be identified. Do not output any other text, explanation, or markdown formatting.';
+  var BOOKS_USER_PROMPT = 'Look at this photo and identify the book title and author (leave empty if you cannot identify them).';
 
   var MAX_DIM = 1280;
   var WEBP_QUALITY = 0.75;

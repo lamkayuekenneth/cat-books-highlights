@@ -17,41 +17,42 @@
 
   /* ---------- 直連 OpenRouter 用嘅 prompt（同 analyze.py 一致） ---------- */
   var SYSTEM_PROMPT =
-    '你係一個協助整理閱讀筆記嘅助手。用戶影咗一本書其中一頁嘅相片，' +
-    '頁面可能有書名、章節名、頁碼、螢光筆同底線標記（直排或橫排書都啱）。\n' +
-    '請完成三件事：\n' +
-    '1. 核實頁面有冇書名：檢查頁眉/頁腳（header / footer）印嘅文字。' +
-    '如果係完整嘅書名就寫出嚟；如果嗰行係章節標題（例如「第一章」「第X卷」「第X節」）或者內文，就寫空字串——章節名唔算書名。\n' +
-    '2. 如果頁面印有頁碼（通常喺頁面頂部或底部嘅獨立數字，例如 12、150、-25-、p.87），' +
-    '寫出頁碼（淨係寫數字，唔好要 p.、第、- 呢啲前後綴）；冇頁碼就寫空字串。\n' +
-    '3. 睇下頁面有冇閱讀標記（直排或橫排書都啱）：\n' +
-    '   - 螢光筆（marker / highlighter，通常係粉紅色、黃色或綠色 marker 塗喺字上面嘅底色）；\n' +
-    '   - 底線（underline，通常係鉛筆／原子筆／中性筆畫喺文字下面嘅直線；' +
-    '注意：橫排（水平）書嘅底線畫喺文字下面，直排（垂直）書嘅底線通常畫喺文字左側）；\n' +
-    '每一處標記（螢光筆或底線），只抄實際有標記嗰啲字（highlighted / underlined characters）成為一個 tag；' +
-    '唔好連標記以外嘅字都抄、唔好成句成段照抄、唔好拆開、唔好消化、唔好改寫、唔好翻譯、唔好擴寫；' +
-    '如果頁面完全冇螢光筆同底線，tags 一定要輸出空陣列 []，絕對唔可以將頁面嘅普通文字拆散做 tag；' +
-    '標記（螢光筆＋底線）通常唔會多過 5 處，如果拆出超過 10 個 tag 好可能係誤判，要重新只輸出真正有標記嘅文字；' +
-    '有幾多處標記，就係幾多個 tag。\n' +
-    '【線標記合併規則（直排同橫排都適用）】直排書讀者通常喺每一欄文字左側畫一條直線標記，' +
-    '橫排書讀者通常喺每一欄文字下面畫底線：如果同一段連續文字跨幾欄被標記（上一欄最後一個字同下一欄第一個字接得上＝內容連貫），' +
-    '要將呢幾欄嘅標記文字連貫合併做一個 tag，唔好每欄拆開一個 tag；' +
-    '只有真係分開、內容唔連貫嘅幾段標記先至各自做一個 tag。\n' +
-    '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
+    'You are an assistant that helps organize reading notes. The user photographed one page of a book; ' +
+    'the page may show a book title, chapter title, page number, and highlight/underline marks (works for both vertical (traditional) and horizontal books).\n' +
+    'Please do three things:\n' +
+    '1. Verify whether the page shows a book title: check the text printed in the header/footer. ' +
+    'If it is the full book title, write it out; if that line is a chapter heading (e.g. "Chapter 1", "Vol. 2", "Section 3") or body text, write an empty string — chapter titles do not count as the book title.\n' +
+    '2. If the page has a page number printed (usually a standalone number at the top or bottom of the page, e.g. 12, 150, -25-, p.87), ' +
+    'write the page number (digits only, drop prefixes/suffixes like p., 第, -); if there is no page number, write an empty string.\n' +
+    '3. Check the page for reading marks (vertical or horizontal books both work):\n' +
+    '   - Highlighter/marker (usually pink, yellow, or green marker applied as a background color over characters);\n' +
+    '   - Underline (usually a straight line drawn with pencil/pen under the text; ' +
+    'note: in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n' +
+    'For each mark (highlighter or underline), copy only the characters that are actually marked (highlighted/underlined characters) as ONE tag; ' +
+    'do not include unmarked surrounding characters, do not copy whole sentences/paragraphs, do not split, do not paraphrase, do not rewrite, do not translate, do not expand. ' +
+    'If the page has no highlights or underlines at all, tags MUST be an empty array []; never split ordinary page text into tags. ' +
+    'Marks (highlighter + underline) are usually no more than 5; if you produce more than 10 tags it is likely a misdetection — reconsider and output only the truly marked text. ' +
+    'The number of tags equals the number of marks.\n' +
+    '[Merging rule for line marks (applies to both vertical and horizontal books)]: ' +
+    'vertical-book readers usually draw a straight line on the left side of each column of text; horizontal-book readers usually underline the text below each column: ' +
+    'if the same continuous stretch of text spans multiple columns and is marked (the last character of the previous column connects to the first character of the next column = continuous content), ' +
+    'merge the marked text of these columns into ONE tag — do not create one tag per column; ' +
+    'only separate, non-continuous marked stretches each get their own tag.\n' +
+    'Output ONLY one JSON object in exactly this format:\n' +
     '{"book_title": "書名", "page": "頁碼", "tags": ["標記字1", "標記字2"]}\n' +
-    '書名或頁碼搵唔到就寫空字串。唔好輸出任何其他文字、解釋、或者 markdown 標記。';
-  var USER_PROMPT = '請睇吓呢張書頁相片：核實有冇書名（章節名唔算，冇就留空）、寫出頁碼（有先寫）；每一處標記——螢光筆塗住嘅字，或者底線畫住嘅字（橫排書底線喺字下面、直排書底線喺字左側）——只抄實際有標記嗰啲字成為一個 tag（唔好連標記以外嘅字）；如果同一段連續文字跨幾欄被線標記（直排或橫排書都係，內容連貫），要將呢幾欄合併做一個 tag，唔好每欄拆開；如果睇唔到任何螢光筆或底線，tags 輸出 []，唔好自己拆字。';
+    'Write an empty string if the book title or page number cannot be found. Do not output any other text, explanation, or markdown formatting.';
+  var USER_PROMPT = 'Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags.';
 
   /* ---------- 書本庫：認書名＋作者用嘅 prompt（同 books.js 一致） ---------- */
   var BOOKS_SYSTEM_PROMPT =
-    '你係一個協助整理書目資料嘅助手。用戶影咗一本書嘅相片（通常係封面、書脊或版權頁，亦可能係內頁）。\n' +
-    '請認出兩樣嘢：\n' +
-    '1. 書名：書上印嘅書名（封面最突出嘅標題，或者版權頁嘅書名）。認唔到就寫空字串，唔好亂估。\n' +
-    '2. 作者：書上印嘅作者名（通常喺「著／作者／撰／by」附近，或者封面署名）。認唔到就寫空字串，唔好亂估。\n' +
-    '只可以輸出一個 JSON 物件，格式嚴格如下：\n' +
+    'You are an assistant that helps organize book catalog data. The user photographed a book (usually the cover, spine, or copyright page, sometimes an inner page).\n' +
+    'Please identify two things:\n' +
+    '1. Book title: the title printed on the book (the most prominent title on the cover, or the title on the copyright page). If you cannot identify it, write an empty string — do not guess.\n' +
+    '2. Author: the author name printed on the book (usually near "著/作者/撰/by", or the signature on the cover). If you cannot identify it, write an empty string — do not guess.\n' +
+    'Output ONLY one JSON object in exactly this format:\n' +
     '{"book_title": "書名", "author": "作者"}\n' +
-    '書名或作者認唔到就寫空字串。唔好輸出任何其他文字、解釋或者 markdown 標記。';
-  var BOOKS_USER_PROMPT = '請睇吓呢張相：認出書名同作者（認唔到就留空）。';
+    'Write an empty string if the title or author cannot be identified. Do not output any other text, explanation, or markdown formatting.';
+  var BOOKS_USER_PROMPT = 'Look at this photo and identify the book title and author (leave empty if you cannot identify them).';
 
   /* ---------- 書本庫 meta 快取（suggest／揀書 modal 用） ---------- */
   var metaCache = null;
