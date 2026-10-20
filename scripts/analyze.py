@@ -39,7 +39,9 @@ SYSTEM_PROMPT = (
     "2. If the page has a page number printed (usually a standalone number at the top or bottom of the page, e.g. 12, 150, -25-, p.87), "
     "write the page number (digits only, drop prefixes/suffixes like p., 第, -); if there is no page number, write an empty string.\n"
     "3. Check the page for reading marks (vertical or horizontal books both work):\n"
-    "   - Highlighter/marker (usually pink, yellow, or green marker applied as a background color over characters);\n"
+    "   - Highlighter/marker (usually pink, yellow, or green marker applied as a background color over characters). "
+    "NOTE: highlighting includes BOTH solid background coating (the color covers the characters area) AND enclosed boxes/frames (a colored outline drawn around characters). "
+    "If a continuous run of characters is highlighted (coated or boxed), copy ALL of the highlighted characters — do not copy only part, and do not skip a highlighted mark just because another mark on the page is more prominent (e.g. a boxed title vs a fainter coated line).\n"
     "   - Underline (a straight line drawn below the text, with pencil, pen, OR a highlighter/marker; "
     "IMPORTANT: the underline marks the characters directly ABOVE the line — it belongs to the text above it, never the text below it; "
     "in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n"
@@ -60,7 +62,7 @@ SYSTEM_PROMPT = (
     "Write an empty string if the book title or page number cannot be found. Do not output any other text, explanation, or markdown formatting."
 )
 
-USER_PROMPT = "Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters, or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy only the actually marked characters as ONE tag (do not include unmarked text). If a highlighter line or underline covers the characters, ignore the line color and read the real character shapes beneath it — never let the line change a character into a different one. If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags."
+USER_PROMPT = "Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters (either coated with marker color or enclosed in a colored box/frame), or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy ALL of the actually marked characters as ONE tag (do not include unmarked text, do not skip any mark even if it is fainter or less prominent than another). If a highlighter line or underline covers the characters, ignore the line color and read the real character shapes beneath it — never let the line change a character into a different one. If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags."
 
 
 def write_result(image_id, result):
