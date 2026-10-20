@@ -27,10 +27,12 @@
     return btoa(bin);
   }
 
+  /* AI 遮罩計數器：多層 busy（例如連續寫幾個檔）都要最後一層先收起 */
+  var _aiBusyCount = 0;
+
   var CB = {
     LS_PAT: LS_PAT,
-    LS_OWNER: LS_OWNER,
-    LS_REPO: LS_REPO,
+    LS_OWNER: LS_OWNER,    LS_REPO: LS_REPO,
     API: 'https://api.github.com',
     b64ToUtf8: b64ToUtf8,
     utf8ToB64: utf8ToB64,
@@ -132,10 +134,11 @@
       });
     },
 
-    /* 用 Contents API 寫檔（需要 token 有 contents:write） */
+    /* 用 Contents API 寫檔（需要 token 有 contents:write）——寫入期間全屏遮罩防誤操作 */
     writeFile: function (path, content, message) {
       var r = this.requireRepo();
       var self = this;
+      self.aiBusy(message || '儲存中…');
       return self.readFileMeta(path).then(function (meta) {
         return meta.sha;
       }).catch(function () {
@@ -147,17 +150,30 @@
           method: 'PUT',
           body: JSON.stringify(body)
         });
+      }).then(function (res) {
+        self.aiReady();
+        return res;
+      }, function (err) {
+        self.aiReady();
+        throw err;
       });
     },
 
     deleteFile: function (path, message) {
       var r = this.requireRepo();
       var self = this;
+      self.aiBusy(message || '刪除中…');
       return self.readFileMeta(path).then(function (meta) {
         return self.gh('/repos/' + r.owner + '/' + r.repo + '/contents/' + path, {
           method: 'DELETE',
           body: JSON.stringify({ message: message || 'delete ' + path, sha: meta.sha })
         });
+      }).then(function (res) {
+        self.aiReady();
+        return res;
+      }, function (err) {
+        self.aiReady();
+        throw err;
       });
     },
 
@@ -171,8 +187,9 @@
       });
     },
 
-    /* AI 分析全屏 loading 遮罩：顯示期間用戶唔可以操作 UI */
+    /* AI 分析／寫入全屏 loading 遮罩：顯示期間用戶唔可以操作 UI（計數器版） */
     aiBusy: function (msg) {
+      _aiBusyCount++;
       var ov = document.getElementById('cb-ai-overlay');
       if (!ov) {
         ov = document.createElement('div');
@@ -190,8 +207,12 @@
       ov.hidden = false;
     },
     aiReady: function () {
-      var ov = document.getElementById('cb-ai-overlay');
-      if (ov) ov.hidden = true;
+      if (_aiBusyCount > 0) _aiBusyCount--;
+      if (_aiBusyCount <= 0) {
+        _aiBusyCount = 0;
+        var ov = document.getElementById('cb-ai-overlay');
+        if (ov) ov.hidden = true;
+      }
     }
   };
 
