@@ -31,40 +31,22 @@ import urllib.request
 socket.setdefaulttimeout(120)
 
 SYSTEM_PROMPT = (
-    "You are an assistant that helps organize reading notes. The user photographed one page of a book; "
-    "the page may show a book title, chapter title, page number, and highlight/underline marks (works for both vertical (traditional) and horizontal books).\n"
-    "Please do three things:\n"
-    "1. Verify whether the page shows a book title: check the text printed in the header/footer. "
-    "If it is the full book title, write it out; if that line is a chapter heading (e.g. \"Chapter 1\", \"Vol. 2\", \"Section 3\") or body text, write an empty string — chapter titles do not count as the book title.\n"
-    "2. If the page has a page number printed (usually a standalone number at the top or bottom of the page, e.g. 12, 150, -25-, p.87), "
-    "write the page number (digits only, drop prefixes/suffixes like p., 第, -); if there is no page number, write an empty string.\n"
-    "3. Check the page for reading marks (vertical or horizontal books both work):\n"
-    "   - Highlighter/marker (usually pink, yellow, or green marker applied as a background color over characters). "
-    "NOTE: highlighting includes BOTH solid background coating (the color covers the characters area) AND enclosed boxes/frames (a colored outline drawn around characters). "
-    "A mark COUNTS only when it is a clear, continuous color block or a complete box that covers multiple characters — copy ALL of its characters. "
-    "Do NOT treat faint color noise, paper shadows, stains, color bleed/glow spreading from an adjacent box, or isolated dots as marks. "
-    "If only one clear mark exists on the page, output exactly one tag — never invent a second mark next to it.\n"
-    "   - Underline (a straight line drawn below the text, with pencil, pen, OR a highlighter/marker; "
-    "IMPORTANT: the underline marks the characters directly ABOVE the line — it belongs to the text above it, never the text below it; "
-    "in horizontal books the underline is below the characters, in vertical books the underline is usually on the left side of the characters).\n"
-    "For each mark (highlighter or underline), copy only the characters that are actually marked (highlighted/underlined characters) as ONE tag; "
-    "do not include unmarked surrounding characters, do not copy whole sentences/paragraphs, do not split, do not paraphrase, do not rewrite, do not translate, do not expand. "
-    "If a highlighter line or underline covers the characters, IGNORE the line color/stroke and read the actual character shapes beneath it — "
-    "compare with the same characters elsewhere on the page when unsure, and NEVER let the line turn a character into a different one. "
-    "If the page has no highlights or underlines at all, tags MUST be an empty array []; never split ordinary page text into tags. "
-    "Marks (highlighter + underline) are usually no more than 5; if you produce more than 10 tags it is likely a misdetection — reconsider and output only the truly marked text. "
-    "The number of tags equals the number of marks.\n"
-    "[Merging rule for line marks (applies to both vertical and horizontal books)]: "
-    "vertical-book readers usually draw a straight line on the left side of each column of text; horizontal-book readers usually underline the text below each column: "
-    "if the same continuous stretch of text spans multiple columns and is marked (the last character of the previous column connects to the first character of the next column = continuous content), "
-    "merge the marked text of these columns into ONE tag — do not create one tag per column; "
-    "only separate, non-continuous marked stretches each get their own tag.\n"
-    "Output ONLY one JSON object in exactly this format:\n"
-    '{"book_title": "書名", "page": "頁碼", "tags": ["標記字1", "標記字2"]}\n'
-    "Write an empty string if the book title or page number cannot be found. Do not output any other text, explanation, or markdown formatting."
+    "You are an OCR assistant that extracts reading marks from a photo of a book page (vertical or horizontal books both work).\n"
+    "Your ONLY job:\n"
+    "1. Extract the characters marked with a highlighter (any color; includes text enclosed in a colored box/frame) — INCLUDE the punctuation of the marked text.\n"
+    "2. Extract the characters underlined with any pen, pencil or highlighter — INCLUDE the punctuation of the marked text.\n"
+    "Each continuous marked run becomes exactly ONE tag. Only clear, continuous marks count: a solid color block covering characters, a complete colored box/frame around characters, or a line drawn over the characters (horizontal book: line below the characters; vertical book: line on the left side of the characters).\n"
+    "Do NOT include unmarked text. Do NOT paraphrase, summarize, translate, expand or rewrite — copy the marked characters exactly as printed.\n"
+    "If a mark covers a character, read the real character shape beneath it — the mark never changes the character.\n"
+    "Do NOT count faint color noise, paper shadows, stains, color bleeding from an adjacent mark, or isolated dots as marks.\n"
+    "If the same continuous marked text spans multiple columns, merge the columns into ONE tag.\n"
+    "If there are no marks, tags MUST be [].\n"
+    "Also return the book title printed on the page (in the header/footer; chapter titles do not count — write an empty string if none) and the printed page number (digits only — write an empty string if none).\n"
+    "Output ONLY one JSON object, no other text, in exactly this format:\n"
+    '{"book_title": "書名", "page": "頁碼", "tags": ["標記字1", "標記字2"]}'
 )
 
-USER_PROMPT = "Look at this photo of a book page: verify whether a book title is present (chapter titles do not count; leave empty if none), write the page number if printed (digits only). For each mark — highlighted characters (either coated with a clear continuous marker color or enclosed in a complete colored box/frame), or underlined characters (the line may be drawn with pencil, pen, or a highlighter/marker; the line marks the characters directly ABOVE it, never the line below it; horizontal: line below the characters; vertical: line on the left side of the characters) — copy ALL of the actually marked characters as ONE tag (do not include unmarked text). Do NOT count faint color noise, paper shadows, stains, color bleed/glow spreading from an adjacent box, or isolated dots as marks — only clear, continuous marks covering multiple characters count. If a highlighter line or underline covers the characters, ignore the line color and read the real character shapes beneath it — never let the line change a character into a different one. If the same continuous text spans multiple columns and is line-marked (vertical or horizontal books both), merge those columns into one tag instead of one per column. If you see no highlights or underlines, output tags as [] — do not invent tags."
+USER_PROMPT = "Extract ONLY the highlighted or underlined characters (including their punctuation) from this book page — one tag per continuous mark. Also include the printed book title (empty string if none; chapter titles do not count) and the printed page number (digits only; empty string if none). If there are no marks, tags = []. Return JSON only in the format {\"book_title\": \"...\", \"page\": \"...\", \"tags\": [\"...\"]}."
 
 
 def write_result(image_id, result):
