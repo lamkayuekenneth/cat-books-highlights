@@ -431,6 +431,36 @@
   if (libPhoto) libPhoto.addEventListener('change', function () { handleLibPhoto(libPhoto.files && libPhoto.files[0]); });
   if (libCamera) libCamera.addEventListener('change', function () { handleLibPhoto(libCamera.files && libCamera.files[0]); });
 
+  /* 📋 貼上圖片：Clipboard API（HTTPS／localhost）→ 同一條 AI 認書名流程 */
+  var libClipboard = document.getElementById('lib-clipboard');
+  if (libClipboard) {
+    libClipboard.addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        return toast('此瀏覽器唔支援直接讀剪貼簿圖片（可改用「揀相」）', 'warn');
+      }
+      toast('讀緊剪貼簿…', 'info');
+      navigator.clipboard.read().then(function (items) {
+        var item = null, type = null, i, t;
+        for (i = 0; i < items.length; i++) {
+          for (t = 0; t < items[i].types.length; t++) {
+            if (items[i].types[t].indexOf('image/') === 0) { item = items[i]; type = items[i].types[t]; break; }
+          }
+          if (item) break;
+        }
+        if (!item) throw new Error('剪貼簿入面冇圖片——請先複製一張書本相，再撳「📋 貼上」');
+        return item.getType(type).then(function (blob) {
+          var ext = type.indexOf('png') !== -1 ? 'png'
+            : type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1 ? 'jpg'
+            : type.indexOf('webp') !== -1 ? 'webp' : 'img';
+          var f = new File([blob], 'clipboard-' + Date.now() + '.' + ext, { type: type });
+          handleLibPhoto(f);
+        });
+      }).catch(function (err) {
+        toast(err && err.message ? err.message : ('讀剪貼簿失敗：' + err), 'warn');
+      });
+    });
+  }
+
   /* ---------- 頂部 filter ---------- */
   titleFilter.addEventListener('focus', function () { showSuggestions('title', titleFilter.value); });
   tagFilter.addEventListener('focus', function () { showSuggestions('tag', tagFilter.value); });
