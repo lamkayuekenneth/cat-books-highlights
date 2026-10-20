@@ -62,6 +62,30 @@
     });
   }
 
+  /* ---------- 設定完整度檢查：缺咩就紅色 banner 叫用戶去設定頁 ---------- */
+  (function showSetupCheck() {
+    var banner = document.getElementById('page-banner');
+    if (!banner) return;
+    var missing = [];
+    var label = {
+      pat: 'GitHub Token（PAT）',
+      orkey: 'OpenRouter API Key',
+      model: 'AI Model',
+      base: 'Base URL'
+    };
+    if (!CB.getPat()) missing.push('pat');
+    if (!CB.getOrKey()) missing.push('orkey');
+    if (!localStorage.getItem(CB.LS_MODEL)) missing.push('model');
+    if (!localStorage.getItem(CB.LS_BASE)) missing.push('base');
+    if (missing.length) {
+      var items = missing.map(function (k) { return label[k]; }).join('、');
+      banner.hidden = false;
+      banner.className = 'page-banner error';
+      banner.innerHTML = '🚫 仲未設好以下設定：<b>' + items + '</b>。' +
+        '請去 <a href="settings.html" style="color:inherit;text-decoration:underline;">⚙️ 設定</a> 填返，先可以完整使用（AI 分析＋儲存）。';
+    }
+  })();
+
   /* ---------- 未有 API Key 提示 banner ---------- */
   (function showModeBanner() {
     var banner = document.getElementById('mode-banner');

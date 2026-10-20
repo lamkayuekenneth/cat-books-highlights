@@ -21,6 +21,21 @@
   var orKeyInput = document.getElementById('orkey');
   var orKeyStatus = document.getElementById('orkey-status');
 
+  /* ---------- 必填欄未設定 → 紅底（即時更新） ---------- */
+  function markInvalid(input, invalid) {
+    input.classList.toggle('input-invalid', !!invalid);
+  }
+  function refreshInputStates() {
+    markInvalid(patInput, !patInput.value.trim());
+    markInvalid(orKeyInput, !orKeyInput.value.trim() && !CB.getOrKey());
+    markInvalid(modelInput, !modelInput.value.trim());
+    markInvalid(baseUrlInput, !baseUrlInput.value.trim());
+  }
+  [ownerInput, repoInput, patInput, orKeyInput, modelInput, baseUrlInput].forEach(function (el) {
+    el.addEventListener('input', refreshInputStates);
+  });
+  refreshInputStates();
+
   /* ---------- 初始值 ---------- */
   var conn = CB.getOwnerRepo();
   ownerInput.value = conn.owner;
@@ -30,13 +45,15 @@
   var aiCache = CB.getAiCache();
   modelInput.value = aiCache.model;
   baseUrlInput.value = aiCache.baseUrl;
+  refreshInputStates(); /* 初始值設好後即刻更新紅底狀態 */
 
   try {
     CB.freshText('config/settings.json').then(function (text) {
       var s = JSON.parse(text);
       if (s.model) modelInput.value = s.model;
       if (s.base_url) baseUrlInput.value = s.base_url;
-    }).catch(function () { /* 未有設定檔都冇問題 */ });
+      refreshInputStates();
+    }).catch(function () { refreshInputStates(); /* 未有設定檔都冇問題 */ });
   } catch (e) { /* 未填 owner/repo 時跳過（例如本地開檔） */ }
 
   function saveConn() {

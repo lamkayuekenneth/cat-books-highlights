@@ -130,6 +130,11 @@ input[data-role="title"].state-filled {
   background: #e7f4e7;
   border-color: var(--ok);
 }
+/* 設定頁必填欄：未設定 → 紅底警告 */
+input.input-invalid {
+  background: #fdecea;
+  border-color: var(--danger);
+}
 .hint { font-size: .8rem; color: var(--ink-soft); margin: 6px 0 0; line-height: 1.5; }
 code { background: #f2ead6; padding: 1px 6px; border-radius: 6px; font-size: .85em; }
 

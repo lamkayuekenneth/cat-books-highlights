@@ -33,6 +33,7 @@
   var CB = {
     LS_PAT: LS_PAT,
     LS_OWNER: LS_OWNER,    LS_REPO: LS_REPO,
+    LS_MODEL: LS_MODEL,    LS_BASE: LS_BASE,
     API: 'https://api.github.com',
     b64ToUtf8: b64ToUtf8,
     utf8ToB64: utf8ToB64,
