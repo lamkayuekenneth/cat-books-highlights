@@ -204,6 +204,7 @@
     opts = opts || {};
     var maxDim = opts.maxDim || MAX_DIM;
     var maxB64 = opts.maxB64 || MAX_B64_LEN;
+    var minDim = opts.minDim || MIN_DIM;
     return Promise.resolve().then(function () {
       return makeBitmap(file);
     }).then(function (source) {
@@ -220,8 +221,8 @@
         /* 自適應縮細：每次最多縮 30% 尺寸、品質 -0.05，直到符合 GitHub input 上限 */
         while (base64.length > maxB64 && guard < 8) {
           var s = Math.max(0.7, Math.sqrt(maxB64 / base64.length));
-          w = Math.max(MIN_DIM, Math.round(w * s));
-          h = Math.max(MIN_DIM, Math.round(h * s));
+          w = Math.max(minDim, Math.round(w * s));
+          h = Math.max(minDim, Math.round(h * s));
           quality = Math.max(0.45, quality - 0.05);
           dataUrl = render(source, w, h, quality);
           base64 = dataUrl.split(',')[1];
@@ -947,9 +948,11 @@
         var card = new Card(file, id);
         queue.insertBefore(card.el, queue.firstChild);
         var isDirect = !!CB.getOrKey();
-        /* 直連模式可以送大圖（豎排細字更清晰）；後備模式受 GitHub dispatch 65535 限制要壓細 */
-        var copts = isDirect ? { maxDim: 1920, maxB64: 800000 } : { maxDim: 1280, maxB64: MAX_B64_LEN };
-        var maxOk = isDirect ? 800000 + 50000 : MAX_B64_LEN + 50000;
+        /* 直連模式可以送大圖（豎排細字更清晰）；後備模式受 GitHub dispatch 64KB 限制要壓細 */
+        var copts = isDirect
+          ? { maxDim: 1920, maxB64: 800000, minDim: 480 }
+          : { maxDim: 1280, maxB64: 55000, minDim: 320 };
+        var maxOk = isDirect ? 800000 + 50000 : 58000;
         return compressImage(file, copts).then(function (compressed) {
           if (compressed.base64.length > maxOk) {
             throw new Error('相片太複雜，壓縮後仍然超出限制（請揀較清晰嘅書頁相）');

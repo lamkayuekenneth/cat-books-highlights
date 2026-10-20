@@ -177,13 +177,19 @@
       });
     },
 
-    /* dispatch GitHub Actions workflow（repository_dispatch：client_payload 冇 65,535 字元限制，
-       圖片可以高質素直送；需要 token 有 actions:write） */
+    /* dispatch GitHub Actions workflow（repository_dispatch：client_payload 上限 65,535 bytes；
+       前端預檢長度，避免直接食 GitHub 422 錯誤） */
     dispatchWorkflow: function (fileName, inputs) {
       var r = this.requireRepo();
+      var payload = JSON.stringify({ event_type: 'analyze', client_payload: inputs });
+      if (payload.length > 64000) {
+        return Promise.reject(new Error(
+          '後備模式限制 64KB：圖片壓縮後仍然太大（' + payload.length + ' bytes）。' +
+          '建議喺設定頁加入 OpenRouter key 用直連模式（冇 64KB 限制），或者影低解像度啲嘅相片。'));
+      }
       return this.gh('/repos/' + r.owner + '/' + r.repo + '/dispatches', {
         method: 'POST',
-        body: JSON.stringify({ event_type: 'analyze', client_payload: inputs })
+        body: payload
       });
     },
 
