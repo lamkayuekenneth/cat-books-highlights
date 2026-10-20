@@ -354,6 +354,7 @@
       '      <button class="btn btn-small" data-role="opt-pick" type="button">🗂️ 從書本庫中揀書</button>' +
       '      <button class="btn btn-small" data-role="opt-gallery" type="button">🖼️ 揀相（AI 認書名＋作者）</button>' +
       '      <button class="btn btn-small" data-role="opt-photo" type="button">📷 拍照（AI 認書名＋作者）</button>' +
+      '      <button class="btn btn-small" data-role="opt-clip" type="button">📋 貼上（AI 認書名＋作者）</button>' +
       '    </div>' +
       '  </div>' +
       '  <div class="field" data-role="author-wrap" hidden>' +
@@ -391,6 +392,7 @@
     this.optPick = this.el.querySelector('[data-role="opt-pick"]');
     this.optGallery = this.el.querySelector('[data-role="opt-gallery"]');
     this.optPhoto = this.el.querySelector('[data-role="opt-photo"]');
+    this.optClip = this.el.querySelector('[data-role="opt-clip"]');
     this.suggestEl = this.el.querySelector('[data-role="suggest"]');
 
     /* 書名框狀態底色：空 → 紅，有字 → 綠（一開卡就反映） */
@@ -408,7 +410,7 @@
       setTimeout(function () { if (card.suggestEl) card.suggestEl.hidden = true; }, 150);
     });
 
-    /* 書名框下面常駐三個掣：揀書／揀相／拍照（任何時候都得用） */
+    /* 書名框下面常駐四個掣：揀書／揀相／拍照／貼上（任何時候都得用） */
     this.optPick.addEventListener('click', function () {
       openPickModal(card);
     });
@@ -417,6 +419,31 @@
     });
     this.optPhoto.addEventListener('click', function () {
       card.pickCoverPhoto(true); /* 開相機 */
+    });
+    this.optClip.addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        return toast('此瀏覽器唔支援直接讀剪貼簿圖片（可改用「揀相」）', 'warn');
+      }
+      toast('讀緊剪貼簿…', 'info');
+      navigator.clipboard.read().then(function (items) {
+        var item = null, type = null, i, t;
+        for (i = 0; i < items.length; i++) {
+          for (t = 0; t < items[i].types.length; t++) {
+            if (items[i].types[t].indexOf('image/') === 0) { item = items[i]; type = items[i].types[t]; break; }
+          }
+          if (item) break;
+        }
+        if (!item) throw new Error('剪貼簿入面冇圖片——請先複製一張書本相，再撳「📋 貼上」');
+        return item.getType(type).then(function (blob) {
+          var ext = type.indexOf('png') !== -1 ? 'png'
+            : type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1 ? 'jpg'
+            : type.indexOf('webp') !== -1 ? 'webp' : 'img';
+          var f = new File([blob], 'clipboard-' + Date.now() + '.' + ext, { type: type });
+          card.analyzeCoverFile(f);
+        });
+      }).catch(function (err) {
+        toast(err && err.message ? err.message : ('讀剪貼簿失敗：' + err), 'warn');
+      });
     });
 
     /* 預覽只放喺瀏覽器記憶體；儲存後清除 */
@@ -674,29 +701,40 @@
     inp.addEventListener('change', function () {
       var file = inp.files && inp.files[0];
       if (!file) return;
-      card.status('AI 認緊書名＋作者…（直連，幾秒）');
-      CB.aiBusy('AI 認緊書名＋作者…');
-      compressImage(file).then(function (compressed) {
-        return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
-      }).then(function (res) {
-        CB.aiReady();
-        if (res.book_title) card.titleInput.value = res.book_title;
-        card.updateTitleState();
-        if (res.author) card.authorInput.value = res.author;
-        card.authorWrap.hidden = false;
-        card.libText.hidden = true;
-        card.titleInput.classList.remove('input-error');
-        card.titleErrorEl.hidden = true;
-        card.status((res.book_title || res.author)
-          ? '✓ AI 認完書名／作者，改完先撳儲存'
-          : '⚠ AI 認唔到——可以自己打返書名，或者喺下面揀書／再揀相', res.book_title ? 'ok' : 'warn');
-      }).catch(function (err) {
-        CB.aiReady();
-        card.status('✗ AI 認書名失敗：' + (err.message || err) + '（可以自己打返書名）', 'error');
-        toast('AI 認書名失敗：' + (err.message || err), 'error');
-      });
+      card.analyzeCoverFile(file);
     });
     inp.click();
+  };
+
+  /* 封面相（揀相／拍照／貼上共用）→ AI 認書名＋作者 → 填入卡片 */
+  Card.prototype.analyzeCoverFile = function (file) {
+    var card = this;
+    if (!file) return;
+    if (!CB.getOrKey()) {
+      toast('⚠ 需要「🚀 瀏覽器直連」（設定頁貼 OpenRouter Key）先可以 AI 認書名；唔想用 AI 就直接喺書名框打返書名', 'warn');
+      return;
+    }
+    card.status('AI 認緊書名＋作者…（直連，幾秒）');
+    CB.aiBusy('AI 認緊書名＋作者…');
+    compressImage(file).then(function (compressed) {
+      return directAnalyze(compressed.dataUrl, BOOKS_SYSTEM_PROMPT, BOOKS_USER_PROMPT);
+    }).then(function (res) {
+      CB.aiReady();
+      if (res.book_title) card.titleInput.value = res.book_title;
+      card.updateTitleState();
+      if (res.author) card.authorInput.value = res.author;
+      card.authorWrap.hidden = false;
+      card.libText.hidden = true;
+      card.titleInput.classList.remove('input-error');
+      card.titleErrorEl.hidden = true;
+      card.status((res.book_title || res.author)
+        ? '✓ AI 認完書名／作者，改完先撳儲存'
+        : '⚠ AI 認唔到——可以自己打返書名，或者喺下面揀書／再揀相', res.book_title ? 'ok' : 'warn');
+    }).catch(function (err) {
+      CB.aiReady();
+      card.status('✗ AI 認書名失敗：' + (err.message || err) + '（可以自己打返書名）', 'error');
+      toast('AI 認書名失敗：' + (err.message || err), 'error');
+    });
   };
 
   Card.prototype.showError = function (msg) {
